@@ -7,5 +7,3 @@ numeric_cols = [
     'peripheral_cluster'
 ]
 only_one_year_needed_col = ['year_of_municipal_status']
-
-DATASET_MATCHING_PATH = 'src/data/matching_features_df.csv'

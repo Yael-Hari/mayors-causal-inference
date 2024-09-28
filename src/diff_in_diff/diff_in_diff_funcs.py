@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from typing import List, Tuple
 from sklearn.linear_model import LinearRegression
 from pathlib import Path
+from tqdm import tqdm
 
 def calc_diff_in_diff_per_target(
     df: pd.DataFrame, 
@@ -246,7 +247,7 @@ def calc_diff_in_diff(
     all_step2_results = []
     all_compare_results = []
     # iterate over targets
-    for target_id in treatment_ids:
+    for target_id in tqdm(treatment_ids):
         for (treatment_year, incident_type), group in df[df.index == target_id].groupby(['incident_year', 'incident_type']):
             curr_df = df[(df['incident_type'] == incident_type) | (df['incident_type'].isnull())]
             target_neighbors = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
@@ -310,14 +311,14 @@ if __name__ == "__main__":
     
     src_path = Path.cwd() / 'src'
     print(src_path)
-    results_dir = src_path / 'results'
+    results_dir = src_path / 'results' / 'test'
     
     calc_diff_in_diff(
         inference_df,
         columns_to_predict=['metric1', 'metric2'], 
         treatment_ids=df_treatment['auth_id'].tolist(),
-        k=2,
-        distance_metric='euclidean',
+        k=3,
+        distance_metric='cosine',
         results_dir=results_dir,
         diff_results_dir=(results_dir / 'diff'),
     )

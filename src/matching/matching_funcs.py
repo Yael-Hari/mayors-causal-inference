@@ -148,10 +148,10 @@ if __name__ == '__main__':
 
     src_path = Path.cwd() / 'src'
     print(src_path)
-    results_dir = src_path / 'results'
+    results_dir = src_path / 'results' / 'test'
     knn_results_dir = results_dir / 'knn'
     
-    k = 2
+    k = 3
     metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
     matching_cols=['feature1', 'feature2']
     match_and_plot(df_treatment, df_control, matching_cols, k, metric, knn_results_dir)
