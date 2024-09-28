@@ -60,12 +60,15 @@ def match_and_plot_per_target(matching_df: pd.DataFrame, matching_cols: List[str
     
     # Add labels for all points
     for i in range(len(reduced_data)):
-        plt.text(reduced_data[i, 0] + 0.01, reduced_data[i, 1] + 0.01, matching_df.iloc[i]['auth_name'], fontsize=9)
+        # Reverse the Hebrew text label for each authority
+        reversed_label = matching_df.iloc[i]['auth_name'][::-1]
+        plt.text(reduced_data[i, 0] + 0.01, reduced_data[i, 1] + 0.01, reversed_label, fontsize=9)
         
     # Add title and subtitle
     target_name = matching_df.loc[target_id]['auth_name']
-    plt.title('KNN for Target {}'.format(target_name))
-    knn_auth_names = ', '.join(matching_df.iloc[nn_indices].sort_values(by="auth_id")['auth_name'])
+    plt.title('KNN for Target {}'.format(target_name[::-1]))
+    # Reverse the Hebrew labels for the k-nearest neighbors
+    knn_auth_names = ', '.join(matching_df.iloc[nn_indices].sort_values(by="auth_id")['auth_name'].apply(lambda x: x[::-1]))
     plt.suptitle(f'K Nearest Neighbors: {knn_auth_names}', fontsize=12)
     
     # Add legend

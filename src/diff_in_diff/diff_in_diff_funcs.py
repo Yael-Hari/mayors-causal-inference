@@ -222,6 +222,7 @@ def calc_diff_in_diff(
     treatment_ids: List[str],
     k: int,
     distance_metric: str,
+    results_dir: str,
     diff_results_dir: str,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -317,5 +318,6 @@ if __name__ == "__main__":
         treatment_ids=df_treatment['auth_id'].tolist(),
         k=2,
         distance_metric='euclidean',
+        results_dir=results_dir,
         diff_results_dir=(results_dir / 'diff'),
     )

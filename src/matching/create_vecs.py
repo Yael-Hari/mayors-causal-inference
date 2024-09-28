@@ -37,6 +37,25 @@ temporal_features_cols = ['council_members_number', 'socioeconomic_level', 'comp
     'property_tax_residential_current_year',
     'property_tax_business_current_year']
 
+def one_hot_encode(df, column):
+    # Perform one-hot encoding
+    one_hot = pd.get_dummies(df[column], prefix=column).astype(int)
+    
+    # Drop the original column and concatenate the new one-hot encoded columns
+    df = df.drop(column, axis=1)
+    df = pd.concat([one_hot, df], axis=1)
+    
+    return df
+
+def normalize_numerical_columns(df):
+    # Select numerical columns
+    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.difference(key_cols+['district'])
+    
+    # Apply Min-Max scaling (normalization)
+    df[numeric_cols] = (df[numeric_cols] - df[numeric_cols].min()) / (df[numeric_cols].max() - df[numeric_cols].min())
+    
+    return df
+
 def create_vecs(df_matching: pd.DataFrame, method: Union[Literal['agg'], Literal['concat']]) -> pd.DataFrame:
     agg_df_list = []
     concat_df_list = []
@@ -68,9 +87,13 @@ def create_vecs(df_matching: pd.DataFrame, method: Union[Literal['agg'], Literal
 
     # Create final DataFrame based on the selected method
     if method == 'agg':
-        return pd.DataFrame(agg_df_list)
+        df = pd.DataFrame(agg_df_list)
     elif method == 'concat':
-        return pd.DataFrame(concat_df_list)
+        df = pd.DataFrame(concat_df_list)
+        
+    df = one_hot_encode(df, 'district')
+    df = normalize_numerical_columns(df)
+    return df
     
     
 if __name__ == '__main__':
