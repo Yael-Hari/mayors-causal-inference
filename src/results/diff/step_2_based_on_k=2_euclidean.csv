@@ -1,0 +1,17 @@
+target_auth_id,target_auth_name,control_auth_id,control_auth_name,treatment_year,incident_type,column,diff_in_diff
+6,F,2,B,2001.0,conviction,metric1,7.0
+6,F,2,B,2001.0,conviction,metric2,-50.0
+6,F,4,D,2001.0,conviction,metric1,5.0
+6,F,4,D,2001.0,conviction,metric2,-40.0
+7,G,4,D,2001.0,arrest,metric1,-1.0
+7,G,4,D,2001.0,arrest,metric2,0.0
+7,G,5,E,2001.0,arrest,metric1,-7.0
+7,G,5,E,2001.0,arrest,metric2,10.0
+7,G,4,D,2001.0,conviction,metric1,-3.0
+7,G,4,D,2001.0,conviction,metric2,-20.0
+7,G,5,E,2001.0,conviction,metric1,-9.0
+7,G,5,E,2001.0,conviction,metric2,-10.0
+7,G,4,D,2003.0,conviction,metric1,1.0
+7,G,4,D,2003.0,conviction,metric2,30.0
+7,G,5,E,2003.0,conviction,metric1,-1.0
+7,G,5,E,2003.0,conviction,metric2,40.0

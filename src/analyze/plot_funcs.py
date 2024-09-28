@@ -64,5 +64,7 @@ def plot_across_hyper_params(compare_df_path: str) -> None:
     plt.savefig('src/plots/k_effect_cosine.png')
     plt.close()
     print("Effect of k plot saved for cosine distance metric as k_effect_cosine.png")
-# Call the function to generate and save plots
-plot_across_hyper_params(compare_df_path='compare_df.csv')
+
+if __name__ == '__main__':
+    # Call the function to generate and save plots
+    plot_across_hyper_params(compare_df_path='compare_df.csv')
