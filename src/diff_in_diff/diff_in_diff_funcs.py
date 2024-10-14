@@ -1,15 +1,16 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import List, Tuple
-from sklearn.linear_model import LinearRegression
 from pathlib import Path
 from tqdm import tqdm
-# import statsmodels.api as sm
 from statsmodels.formula.api import ols
-import numpy as np
+from src.const import columns_to_predict, treatment_ids, placebo_ids
+from src.get_data_funcs import get_infer_df, get_placebo_incident_df
+from loguru import logger
 
 def calc_diff_in_diff_per_target(
-    df: pd.DataFrame, 
+    infer_df: pd.DataFrame, 
     columns_to_predict: List[str], 
     treatment_auth_id: str, 
     control_auth_ids: List[str], 
@@ -35,10 +36,10 @@ def calc_diff_in_diff_per_target(
     step_1_results = []
 
     for auth_id in [treatment_auth_id] + control_auth_ids:
-        auth_name = df.loc[auth_id, 'auth_name'].unique().item()
+        auth_name = infer_df.loc[auth_id, 'auth_name'].unique().item()
         for col in columns_to_predict:
-            before_treatment = df[(df.index == auth_id) & (df['year'] == treatment_year - 1)][col].mean()
-            after_treatment = df[(df.index == auth_id) & (df['year'] == treatment_year + 1)][col].mean()
+            before_treatment = infer_df[(infer_df.index == auth_id) & (infer_df['year'] == treatment_year - 1)][col].mean()
+            after_treatment = infer_df[(infer_df.index == auth_id) & (infer_df['year'] == treatment_year + 1)][col].mean()
             before_after_diff = after_treatment - before_treatment
 
             step_1_results.append(pd.DataFrame([{
@@ -56,11 +57,11 @@ def calc_diff_in_diff_per_target(
     step_2_results = []
 
     treatment_results = step_1_results_df[step_1_results_df['auth_id'] == treatment_auth_id]
-    target_auth_name = df.loc[treatment_auth_id, 'auth_name'].unique().item()
+    target_auth_name = infer_df.loc[treatment_auth_id, 'auth_name'].unique().item()
 
     for control_auth_id in control_auth_ids:
         control_results = step_1_results_df[step_1_results_df['auth_id'] == control_auth_id]
-        control_auth_name = df.loc[control_auth_id, 'auth_name'].unique().item()
+        control_auth_name = infer_df.loc[control_auth_id, 'auth_name'].unique().item()
         for col in columns_to_predict:
             treatment_diff = treatment_results[treatment_results['column'] == col]['before_after_diff'].values[0]
             control_diff = control_results[control_results['column'] == col]['before_after_diff'].values[0]
@@ -80,73 +81,10 @@ def calc_diff_in_diff_per_target(
     step_2_results_df = pd.concat(step_2_results)
     return step_1_results_df, step_2_results_df
 
-def predict_metrics_for_target_auth(
-    df: pd.DataFrame, 
-    target_auth_ids: List[str], 
-    cols_to_predict: List[str],
-    results_dir: str
-) -> pd.DataFrame:
-    """
-    Predict the metric for each target authority in the year after the treatment year
-    using previous values from years before the treatment year.
-
-    Parameters:
-    df (pd.DataFrame): The input DataFrame containing data for multiple years.
-    target_auth_ids (List[str]): List of authority codes to predict metrics for.
-    cols_to_predict (List[str]): List of columns to predict.
-
-    Returns:
-    pd.DataFrame: DataFrame containing the predictions for each target authority and column.
-    """
-
-    results = []
-
-    for auth_id in target_auth_ids:
-        # Get the treatment year for the target authority
-        treatment_year = df.loc[auth_id, 'treatment_year']
-
-        for col in cols_to_predict:
-            # Prepare data for prediction: years before the treatment year
-            data = df[(df.index == auth_id) & (df['year'] < treatment_year)][['year', col]].dropna()
-
-            if len(data) > 1:  # Ensure there is enough data to fit a model
-                # Train a linear regression model
-                X = data[['year']]
-                y = data[col]
-                model = LinearRegression()
-                model.fit(X, y)
-
-                # Predict the metric for the year after the treatment year
-                prediction_year = treatment_year + 1
-                predicted_value = model.predict([[prediction_year]])[0]
-
-                results.append({
-                    'auth_id': auth_id,
-                    'auth_name': df.loc[auth_id, 'auth_name'],
-                    'treatment_year': treatment_year,
-                    'prediction_year': prediction_year,
-                    'column': col,
-                    'predicted_value': predicted_value
-                })
-            else:
-                print(f"Not enough data to predict {col} for authority {auth_id}. Skipping.")
-    
-    # Convert results to a DataFrame
-    predictions_df = pd.DataFrame(results)
-    
-    # Save the results
-    predictions_filename = 'predicted_metrics.csv'
-    predictions_df.to_csv(results_dir / predictions_filename, index=False)
-    
-    print(f"Predictions saved as {predictions_filename}")
-    
-    return predictions_df
-
-def compare_pred_true_per_target(
+def plot_simple_did(
     diff_in_diff_df: pd.DataFrame, 
     k: int, 
     distance_metric: str,
-    treatment_year: int,
     incident_type: str, 
     results_dir: str,
 ) -> None:
@@ -162,19 +100,13 @@ def compare_pred_true_per_target(
         - Columns: target_auth_id, target_auth_name, control_auth_ids, control_auth_names,
             k, distance_metric, metric, mean_DiD, median_DiD, min_DiD, max_DiD.
     """
-
-    compare_dfs = []
     # Iterate over each target authority and metric
     for (target_id, metric), group in diff_in_diff_df.groupby(['target_auth_id', 'column']):
         target_auth_name = group['target_auth_name'].iloc[0]
-        control_auth_ids = group['control_auth_id'].unique().tolist()
-        control_auth_names = group['control_auth_name'].unique().tolist()
 
         # Calculate summary statistics
         mean_DiD = group['diff_in_diff'].mean()
         median_DiD = group['diff_in_diff'].median()
-        min_DiD = group['diff_in_diff'].min()
-        max_DiD = group['diff_in_diff'].max()
 
         # Plotting
         plt.figure(figsize=(10, 6))
@@ -186,7 +118,7 @@ def compare_pred_true_per_target(
 
         # Add horizontal lines for mean and median
         plt.axhline(y=mean_DiD, color='orange', linestyle='--', label=f'Mean DiD: {mean_DiD:.0f}')
-        plt.axhline(y=median_DiD, color='red', linestyle='-.', label=f'Median DiD: {median_DiD:.0f}')
+        plt.axhline(y=median_DiD, color='orange', linestyle='-.', label=f'Median DiD: {median_DiD:.0f}')
         
         # Add title and labels
         plt.title(f'Difference in Differences for {metric}', fontsize=16)
@@ -202,33 +134,14 @@ def compare_pred_true_per_target(
         plt.tight_layout(rect=[0, 0, 1, 0.95])
 
         # Save the plot
-        plot_filename = f'DiD_plot_{target_id}_{incident_type}_{metric}_{distance_metric}_k{k}.png'
-        plt.savefig(results_dir / plot_filename)
+        plot_filename = f'DiD_plot_{target_id}_{distance_metric}_k{k}.png'
+        plt.savefig(results_dir / metric / plot_filename)
         plt.close()
 
         print(f"Plot saved as {plot_filename}")
-
-        # Update results
-        compare_dfs.append(pd.DataFrame([{
-            'target_id': target_id,
-            'target_auth_name': target_auth_name,
-            'treatment_year': treatment_year,
-            'incident_type': incident_type,
-            'control_auth_ids': ','.join(map(str, control_auth_ids)),
-            'control_auth_names': ','.join(control_auth_names),
-            'k': k,
-            'distance_metric': distance_metric,
-            'metric': metric,
-            'mean_DiD': mean_DiD,
-            'median_DiD': median_DiD,
-            'min_DiD': min_DiD,
-            'max_DiD': max_DiD
-        }]))
-    
-    return pd.concat(compare_dfs)
         
 def plot_y_by_year(
-    df: pd.DataFrame, 
+    infer_df: pd.DataFrame, 
     target_id: str, 
     control_auth_ids: List[str], 
     columns_to_predict: List[str],
@@ -250,12 +163,11 @@ def plot_y_by_year(
     """
     
     # Reverse the Hebrew text label for each authority in the df
-    df = df.copy().reset_index()
-    df['auth_name'] = df['auth_name'].apply(lambda x: x[::-1])
-    incident_df = df[df['auth_id'] == target_id][['incident_year', 'incident_type']].drop_duplicates()
-    target_data = df[df['auth_id'] == target_id]
-    all_control_data = df[df['auth_id'].isin(control_auth_ids)]
-    control_dfs = [df[df['auth_id'] == auth_id] for auth_id in control_auth_ids]
+    infer_df['auth_name'] = infer_df['auth_name'].apply(lambda x: x[::-1])
+    incident_df = infer_df[infer_df['auth_id'] == target_id][['incident_year', 'incident_type']].drop_duplicates()
+    target_data = infer_df[infer_df['auth_id'] == target_id]
+    all_control_data = infer_df[infer_df['auth_id'].isin(control_auth_ids)]
+    control_dfs = [infer_df[infer_df['auth_id'] == auth_id] for auth_id in control_auth_ids]
     
     # Define a list of colors excluding green
     colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
@@ -344,16 +256,46 @@ def plot_y_by_year(
         plt.savefig(col_results_dir / plot_filename)
         plt.close()
     
-
-def calc_diff_in_diff(
-    df: pd.DataFrame, 
+def plot_y_by_year_for_all(    
+    infer_df: pd.DataFrame, 
     columns_to_predict: List[str], 
     treatment_ids: List[str],
     k: int,
     distance_metric: str,
     results_dir: str,
     diff_results_dir: str,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ):
+    """
+    Plot the values of the columns to predict for the target authority and its neighbors over the years.
+    
+    Parameters:
+    infer_df (pd.DataFrame): The input DataFrame containing data for multiple years.
+    columns_to_predict (List[str]): The columns for which to calculate DiD.
+    treatment_ids (List[str]): The identifiers for the treatment authorities.
+    k (int): number of nearest neighbors
+    distance_metric (str): the distance metric used for matching
+    results_dir (str): The directory to save the results.
+    
+    Returns:
+    Tuple[pd.DataFrame, pd.DataFrame]: Two DataFrames containing the step 1 and step 2 results.
+    """
+    knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
+    knn_results = pd.read_csv(knn_results_path)
+
+    for target_id in tqdm(treatment_ids):
+        control_auth_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
+        assert len(control_auth_ids) == k
+        plot_y_by_year(infer_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric)
+
+def calc_simple_did(
+    infer_df: pd.DataFrame, 
+    columns_to_predict: List[str], 
+    treatment_ids: List[str],
+    k: int,
+    distance_metric: str,
+    results_dir: str,
+    diff_results_dir: str,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Calculate the difference in differences (DiD) for each column in columns_to_predict.
     
@@ -368,46 +310,45 @@ def calc_diff_in_diff(
     Returns:
     Tuple[pd.DataFrame, pd.DataFrame]: Two DataFrames containing the step 1 and step 2 results.
     """
+    infer_df.set_index('auth_id', inplace=True)
     knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
     knn_results = pd.read_csv(knn_results_path)
     
-    # all_step1_results = []
-    # all_step2_results = []
-    # all_compare_results = []
+    all_step1_results = []
+    all_step2_results = []
+    all_compare_results = []
     # iterate over targets
     for target_id in tqdm(treatment_ids):
         control_auth_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
         assert len(control_auth_ids) == k
-        plot_y_by_year(df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric)
         
-        # for (treatment_year, incident_type), _ in df[df.index == target_id].groupby(['incident_year', 'incident_type']):
-        #     curr_df = df[(df['incident_type'] == incident_type) | (df['incident_type'].isnull())]
-        #     step_1_df, step_2_df = calc_diff_in_diff_per_target(curr_df, columns_to_predict, target_id, control_auth_ids, treatment_year, incident_type)
-        #     # compare_df = compare_pred_true_per_target(step_2_df, k, distance_metric, treatment_year, incident_type, diff_results_dir)
-        #     all_step1_results.append(step_1_df)
-        #     all_step2_results.append(step_2_df)
-        #     # all_compare_results.append(compare_df)
+        for (treatment_year, incident_type), _ in infer_df[infer_df.index == target_id].groupby(['incident_year', 'incident_type']):
+            curr_df = infer_df[(infer_df['incident_type'] == incident_type) | (infer_df['incident_type'].isnull())]
+            step_1_df, step_2_df = calc_diff_in_diff_per_target(curr_df, columns_to_predict, target_id, control_auth_ids, treatment_year, incident_type)
+            plot_simple_did(step_2_df, k, distance_metric, incident_type, diff_results_dir)
+            all_step1_results.append(step_1_df)
+            all_step2_results.append(step_2_df)
     
     # Save the updated compare_df
-    # for results_list, file_name in zip([all_step1_results, all_step2_results, all_compare_results], ['step_1', 'step_2', 'compare']):
-    #     results_filename = f'{file_name}_based_on_k={k}_{distance_metric}.csv'
-    #     concat_df = pd.concat(results_list, ignore_index=True)
-    #     concat_df.to_csv(diff_results_dir / results_filename, index=False)
-    #     print(f"DF saved to {results_filename}")
+    for results_list, file_name in zip([all_step1_results, all_step2_results, all_compare_results], ['step_1', 'step_2', 'compare']):
+        results_filename = f'{file_name}_based_on_k={k}_{distance_metric}.csv'
+        concat_df = pd.concat(results_list, ignore_index=True)
+        concat_df.to_csv(diff_results_dir / results_filename, index=False)
+        print(f"DF saved to {results_filename}")
 
+def generate_data(n_units: int, n_timepoints: int, treatment_effect: float = 0, autocorrelation: float = 0.5)->pd.DataFrame:
+    """
+    Generate synthetic panel data with treatment effect and autocorrelation.
 
-import numpy as np
-import pandas as pd
-from statsmodels.formula.api import ols
-import matplotlib.pyplot as plt
-import os
+    Args:
+        n_units (int): number of units
+        n_timepoints (int): number of timepoints
+        treatment_effect (float, optional): the size of the treatment effect. Defaults to 0.
+        autocorrelation (float, optional): the strength of the autocorrelation. Defaults to 0.5.
 
-# Ensure 'results' directory exists
-if not os.path.exists('results'):
-    os.makedirs('results')
-
-# Function to generate synthetic data
-def generate_data(n_units, n_timepoints, treatment_effect=0, autocorrelation=0.5):
+    Returns:
+        pd.DataFrame: _description_
+    """
     units = np.repeat(np.arange(n_units), n_timepoints)
     time = np.tile(np.arange(n_timepoints), n_units)
     is_treatment = np.where(units >= n_units // 2, 1, 0)
@@ -430,10 +371,17 @@ def generate_data(n_units, n_timepoints, treatment_effect=0, autocorrelation=0.5
     })
     return data
 
-def plot_data(data, n_units, n_timepoints, results_dir, filename):
-    import matplotlib.pyplot as plt
-    import os
+def plot_data(data: pd.DataFrame, n_units: int, n_timepoints: int, results_dir: str, filename: str):
+    """
+    Plot the outcome over time for each unit, with a vertical line at the treatment time.
 
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the outcome data.
+        n_units (int): number of units
+        n_timepoints (int): number of timepoints
+        results_dir (str): The directory to save the results.
+        filename (str): The filename for the plot.
+    """
     plt.figure(figsize=(10, 6))
     units = data['Unit'].unique()
     
@@ -442,8 +390,10 @@ def plot_data(data, n_units, n_timepoints, results_dir, filename):
     control_units = units[units < n_units // 2]
     
     # Define colors for control units using the provided palette
-    colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062',
-              '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
+    colors = [
+        '#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062',
+        '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd'
+    ]
     
     # Map each control unit to a color from the palette
     color_map = {}
@@ -480,17 +430,49 @@ def plot_data(data, n_units, n_timepoints, results_dir, filename):
     plt.savefig(results_dir / filename)
     plt.close()
 
+def compute_did(data: pd.DataFrame)->Tuple[float, float, float]:
+    """
+    Compute the difference-in-differences (DiD) estimate and p value.
 
-# Function to compute DiD estimate and p-value
-def compute_did(data):
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the outcome data.
+
+    Returns:
+        Tuple[float, float, float]: The DiD estimate, standard error, and p value.
+    """
+    
     model = ols('Y ~ IsTreatment * IsPost', data=data).fit()
     coef = model.params['IsTreatment:IsPost']
     se = model.bse['IsTreatment:IsPost']
     pvalue = model.pvalues['IsTreatment:IsPost']
     return coef, se, pvalue
 
-# Function to compute DiD with clustered standard errors
-def compute_clustered_did(data):
+def compute_did_fixed_effects(data: pd.DataFrame)->Tuple[float, float, float]:
+    """
+    Compute the difference-in-differences (DiD) estimate with fixed effects.
+
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the outcome data.
+
+    Returns:
+        Tuple[float, float, float]: The DiD estimate, standard error, and p value.
+    """
+    model_fe = ols('Y ~ IsTreatment * IsPost + C(Unit) + C(time)', data=data).fit()
+    coef = model_fe.params['IsTreatment:IsPost']
+    se = model_fe.bse['IsTreatment:IsPost']
+    pvalue = model_fe.pvalues['IsTreatment:IsPost']
+    return coef, se, pvalue
+
+def compute_clustered_did(data: pd.DataFrame)->Tuple[float, float, float]:
+    """
+    Compute the difference-in-differences (DiD) estimate with clustered standard errors.
+
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the outcome data.
+
+    Returns:
+        Tuple[float, float, float]: The DiD estimate, standard error, and p value.
+    """
     model = ols('Y ~ IsTreatment * IsPost', data=data).fit()
     clustered_model = model.get_robustcov_results(cov_type='cluster', groups=data['Unit'])
     
@@ -504,9 +486,17 @@ def compute_clustered_did(data):
     pvalue = pvalues['IsTreatment:IsPost']
     return coef, se, pvalue
 
-# Permutation testing with unit-level shuffling
-def permutation_test(data, n_permutations=100):
-    n_units = data['Unit'].nunique()
+def permutation_test(data: pd.DataFrame, n_treatment_units: int, n_permutations=100)->float:
+    """
+    Perform a permutation test to compute the p-value for the DiD estimate.
+
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the outcome data.
+        n_permutations (int, optional): The number of permutations to perform. Defaults to 100.
+
+    Returns:
+        float: The p-value for the permutation test.
+    """
     units = data['Unit'].unique()
     # Original estimate
     coef_original, _, _ = compute_did(data)
@@ -515,8 +505,7 @@ def permutation_test(data, n_permutations=100):
     for _ in range(n_permutations):
         # Randomly assign treatment to units
         shuffled_units = np.random.permutation(units)
-        half = n_units // 2
-        treatment_units = shuffled_units[:half]
+        treatment_units = shuffled_units[:n_treatment_units]
         # Create a mapping from units to IsTreatment
         unit_treatment_mapping = {unit: 1 if unit in treatment_units else 0 for unit in units}
         # Apply the shuffled IsTreatment to the data
@@ -528,14 +517,21 @@ def permutation_test(data, n_permutations=100):
     p_value = np.mean([abs(did) >= abs(coef_original) for did in permuted_did])
     return p_value
 
-# Function to plot the results
-def plot_results(results, results_dir, filename):
-    methods = results['method']
-    fpr = [results['false_positive_rate'][method] for method in methods]
-    power = [results['power'][method] for method in methods]
+def plot_results(results_dict: dict, results_dir: str, filename: str):
+    """
+    Plot the results of the method comparison.
+
+    Args:
+        results_df (dict): The DataFrame containing the method comparison results.
+        results_dir (str): The directory to save the results.
+        filename (str): The filename for the plot.
+    """
+    methods = results_dict['method']
+    fpr = [results_dict['false_positive_rate'][method] for method in methods]
+    power = [results_dict['power'][method] for method in methods]
 
     plt.figure(figsize=(8, 6))
-    scatter = plt.scatter(power, fpr, c=range(len(methods)), cmap='viridis', s=100)
+    _ = plt.scatter(power, fpr, c=range(len(methods)), cmap='viridis', s=100)
 
     # Add method labels
     for i, method in enumerate(methods):
@@ -559,9 +555,21 @@ def plot_results(results, results_dir, filename):
     plt.savefig(results_dir / filename)
     plt.close()
 
-# Function to run simulations and compare methods
-def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect, results_dir):
-    methods = ['OLS', 'Clustered SE', 'Permutation']
+def compare_methods_using_sim_data(n_simulations: int, n_units: int, n_timepoints: int, treatment_effect: float, results_dir: str)->dict:
+    """
+    Compare different methods for estimating the treatment effect using simulated data.
+
+    Args:
+        n_simulations (int): The number of simulations to run.
+        n_units (int): The number of units in the data.
+        n_timepoints (int): The number of timepoints in the data.
+        treatment_effect (float): The true treatment effect.
+        results_dir (str): The directory to save the results.
+
+    Returns:
+        dict: A dictionary containing the results of the method comparison.
+    """
+    methods = ['OLS', 'OLS + FE', 'Clustered SE', 'Permutation']
     results = {
         'method': methods,
         'false_positive_rate': {},
@@ -592,6 +600,14 @@ def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect, resu
         if pvalue_ols_with_effect < 0.05:
             power_count['OLS'] += 1
 
+        # Fixed Effects method 
+        _, _, pvalue_fe_no_effect = compute_did_fixed_effects(data_no_effect)
+        _, _, pvalue_fe_with_effect = compute_did_fixed_effects(data_with_effect)
+        if pvalue_fe_no_effect < 0.05:
+            false_positive_count['OLS + FE'] += 1
+        if pvalue_fe_with_effect < 0.05:
+            power_count['OLS + FE'] += 1
+
         # Clustered Standard Errors
         _, _, pvalue_cluster_no_effect = compute_clustered_did(data_no_effect)
         _, _, pvalue_cluster_with_effect = compute_clustered_did(data_with_effect)
@@ -601,8 +617,8 @@ def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect, resu
             power_count['Clustered SE'] += 1
 
         # Permutation test
-        p_value_no_effect = permutation_test(data_no_effect)
-        p_value_with_effect = permutation_test(data_with_effect)
+        p_value_no_effect = permutation_test(data_no_effect, n_treatment_units=n_units // 2)
+        p_value_with_effect = permutation_test(data_with_effect, n_treatment_units=n_units // 2)
         if p_value_no_effect < 0.05:
             false_positive_count['Permutation'] += 1
         if p_value_with_effect < 0.05:
@@ -630,10 +646,10 @@ def run_simulation_with_did_comparison():
     results_dir = src_path / 'results' / 'simulation_did'
     
     for n_units in [10, 30, 50]:
-        results = compare_methods(n_simulations, n_units, n_timepoints, treatment_effect, results_dir)
+        results = compare_methods_using_sim_data(n_simulations, n_units, n_timepoints, treatment_effect, results_dir)
         plot_results(results, results_dir, f'methods_comparison_plot_n_units={n_units}.png')
 
-def run_simultation_with_simple_did():
+def test_simple_did():
     # Example DataFrame
     inference_df = pd.DataFrame({
         'auth_id': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7],
@@ -675,7 +691,7 @@ def run_simultation_with_simple_did():
     print(src_path)
     results_dir = src_path / 'results' / 'test'
     
-    calc_diff_in_diff(
+    calc_simple_did(
         inference_df,
         columns_to_predict=['metric1', 'metric2'], 
         treatment_ids=df_treatment['auth_id'].tolist(),
@@ -685,12 +701,129 @@ def run_simultation_with_simple_did():
         diff_results_dir=(results_dir / 'diff'),
     )
     
+def run_did_analysis_per_target(data: pd.DataFrame):
+    p_vals = {}
+    
+    # OLS method
+    _, _, pvalue_ols_no_effect = compute_did(data)
+    p_vals['OLS'] = pvalue_ols_no_effect
+
+    # Fixed Effects method 
+    _, _, pvalue_fe_no_effect = compute_did_fixed_effects(data)
+    p_vals['OLS + FE'] = pvalue_fe_no_effect
+
+    # Clustered Standard Errors
+    _, _, pvalue_cluster_no_effect = compute_clustered_did(data)
+    p_vals['Clustered SE'] = pvalue_cluster_no_effect
+    
+    # Permutation test
+    p_value_no_effect = permutation_test(data, n_treatment_units=1)
+    p_vals['Permutation'] = p_value_no_effect
+    
+    return p_vals
+
+def get_data_by_target_and_incident(infer_df, target_id, incident_year, incident_type, control_ids, col_to_predict):
+    # returned df should contain the columns: IsTreatment, IsPost, Unit, time, Y
+    # Unit: auth_id
+    # time: year
+    # IsTreatment: 1 if the unit is a treatment unit, 0 otherwise
+    # IsPost: 1 if the time is after the treatment, 0 otherwise
+    # Y: the value of the metric to predict
+    
+    # filter by id
+    filtered_df = infer_df[(infer_df['auth_id'] == target_id) | (infer_df['auth_id'].isin(control_ids))].reset_index(drop=True)
+    # filter by incident
+    filtered_df = filtered_df[(filtered_df['incident_year'] == incident_year) & (filtered_df['incident_type'] == incident_type)]
+    # add IsTreatment
+    filtered_df['IsTreatment'] = np.where(filtered_df['auth_id'] == target_id, 1, 0)
+    # add IsPost
+    filtered_df['IsPost'] = np.where(filtered_df['year'] > incident_year, 1, 0)
+    # select relevant columns
+    filtered_df = filtered_df[['auth_id', 'year', 'IsTreatment', 'IsPost', col_to_predict]]
+    # rename columns
+    filtered_df.rename(columns={col_to_predict: 'Y'}, inplace=True)
+    return filtered_df
+
+def run_did_analysis(infer_df: pd.DataFrame, columns_to_predict: List[str], treatment_ids: List[str], k: int, distance_metric: str, results_dir: str, diff_results_dir: bool, imputed: bool, placebo: bool):
+    # placebo params
+    if placebo:
+        treatment_ids = placebo_ids
+        incident_df = get_placebo_incident_df()
+    else:
+        incident_df = infer_df[['incident_year', 'incident_type']].drop_duplicates()
+    
+    knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
+    knn_results = pd.read_csv(knn_results_path)
+    
+    # iterate over columns to predict
+    for col_to_predict in columns_to_predict:
+        logger.info(f"Run | DiD analysis for column: {col_to_predict}")
+        results = []
+        
+        # iterate over targets
+        for target_id in tqdm(treatment_ids):
+            # get control ids
+            control_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
+            assert len(control_ids) == k
+            
+            # iterate over incidents
+            incident_df = incident_df[incident_df['auth_id'] == target_id]
+            for _, row in incident_df.iterrows():
+                incident_year = row['incident_year']
+                incident_type = row['incident_type']
+                
+                # filter data
+                target_df = get_data_by_target_and_incident(infer_df, target_id, incident_year, incident_type, control_ids, col_to_predict)
+                # get p vals dict
+                p_vals = run_did_analysis_per_target(target_df)
+                # append results
+                results.append(pd.DataFrame([{
+                    'target_id': target_id,
+                    'incident_year': incident_year,
+                    'incident_type': incident_type,
+                    'column': col_to_predict,
+                    'p_vals': p_vals
+                }]))
+                
+        results_df = pd.concat(results, ignore_index=True)
+        # unpack p_vals dict
+        results_df = pd.concat([results_df.drop(['p_vals'], axis=1), results_df['p_vals'].apply(pd.Series)], axis=1)
+        results_df.to_csv(diff_results_dir / col_to_predict / f'did_results_placebo={placebo}_imputed={imputed}_k={k}_{distance_metric}.csv', index=False)
+
 
 if __name__ == "__main__":
-    # run_simultation_with_simple_did()
-    run_simulation_with_did_comparison()
-
-
-
+    # ----- Simulated Data -----
+    # test_simple_did()
+    # run_simulation_with_did_comparison()
     
+    # ----- Our Data -----
 
+    src_path = Path.cwd() / 'src'
+    results_dir = src_path / 'results'
+    diff_results_dir = results_dir / 'diff'
+    imputed = False
+    placebo = False
+    infer_df = get_infer_df(imputed, placebo)
+    
+    # plot_y_by_year_for_all(        
+    #     infer_df,
+    #     columns_to_predict=columns_to_predict, 
+    #     treatment_ids=treatment_ids,
+    #     k=10,
+    #     distance_metric='cosine',
+    #     results_dir=results_dir,
+    #     diff_results_dir=diff_results_dir
+    # )
+    
+    run_did_analysis(
+        infer_df,
+        columns_to_predict=columns_to_predict, 
+        treatment_ids=treatment_ids,
+        k=10,
+        distance_metric='cosine',
+        results_dir=results_dir,
+        diff_results_dir=diff_results_dir,
+        imputed=imputed,
+        placebo=placebo,
+        placebo_ids=placebo_ids
+    )
