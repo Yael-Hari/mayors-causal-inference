@@ -175,21 +175,28 @@ def compare_pred_true_per_target(
 
         # Plotting
         plt.figure(figsize=(10, 6))
+        group = group.sort_values(by='control_auth_name')
+        # Reverse the Hebrew text label for each authority
+        group['control_auth_name'] = group['control_auth_name'].apply(lambda x: x[::-1])
         plt.bar(group['control_auth_name'], group['diff_in_diff'], color='grey')
         plt.bar(target_auth_name, group[group['control_auth_name'] == target_auth_name]['diff_in_diff'], color='green')
 
         # Add horizontal lines for mean and median
-        plt.axhline(y=mean_DiD, color='orange', linestyle='--', label=f'Mean DiD: {mean_DiD:.2f}')
-        plt.axhline(y=median_DiD, color='red', linestyle='-.', label=f'Median DiD: {median_DiD:.2f}')
+        plt.axhline(y=mean_DiD, color='orange', linestyle='--', label=f'Mean DiD: {mean_DiD:.0f}')
+        plt.axhline(y=median_DiD, color='red', linestyle='-.', label=f'Median DiD: {median_DiD:.0f}')
         
         # Add title and labels
         plt.title(f'Difference in Differences for {metric}', fontsize=16)
+        plt.xticks(rotation=45)
         plt.xlabel('Authority Name', fontsize=14)
         plt.ylabel('Difference in Differences', fontsize=14)
         plt.legend()
 
         # Add subtitle with distance metric and k
         plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+
+        # Adjust layout to prevent cutting off
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
 
         # Save the plot
         plot_filename = f'DiD_plot_{target_id}_{incident_type}_{metric}_{distance_metric}_k{k}.png'
@@ -216,6 +223,124 @@ def compare_pred_true_per_target(
         }]))
     
     return pd.concat(compare_dfs)
+        
+def plot_y_by_year(
+    df: pd.DataFrame, 
+    target_id: str, 
+    control_auth_ids: List[str], 
+    columns_to_predict: List[str],
+    diff_results_dir: str,
+    k: int, 
+    distance_metric: str,
+    ):
+    """
+    Plot the values of the columns to predict for the target authority and its neighbors over the years.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing data to plot.
+        target_id (str): ID of the target authority.
+        control_auth_ids (List[str]): List of control authority IDs.
+        columns_to_predict (List[str]): List of columns to predict and plot.
+        diff_results_dir (str): Directory to save the plot results.
+        k (int): Number of nearest neighbors.
+        distance_metric (str): Distance metric used for nearest neighbors.
+    """
+    
+    # Reverse the Hebrew text label for each authority in the df
+    df = df.copy().reset_index()
+    df['auth_name'] = df['auth_name'].apply(lambda x: x[::-1])
+    incident_df = df[df['auth_id'] == target_id][['incident_year', 'incident_type']].drop_duplicates()
+    target_data = df[df['auth_id'] == target_id]
+    all_control_data = df[df['auth_id'].isin(control_auth_ids)]
+    control_dfs = [df[df['auth_id'] == auth_id] for auth_id in control_auth_ids]
+    
+    # Define a list of colors excluding green
+    colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
+    
+    # Plot for each column to predict
+    for column in columns_to_predict:
+        plt.figure(figsize=(12, 8))
+
+        # Plot the target authority
+        plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
+
+        # Plot each control authority in a different color
+        for i, control_df in enumerate(control_dfs):
+            color = colors[i % len(colors)]  # Cycle through colors if there are more control authorities than colors
+            plt.plot(control_df['year'], control_df[column], label=control_df['auth_name'].iloc[0], color=color)
+
+        # Add vertical lines and annotations for each incident_year and incident_type combination
+        for _, row in incident_df.iterrows():
+            incident_year = row['incident_year']
+            incident_type = row['incident_type']
+            
+            plt.axvline(x=incident_year, color='grey', linestyle='--')
+            plt.text(
+                incident_year, 
+                plt.ylim()[1], 
+                incident_type,
+                rotation=90, 
+                verticalalignment='top',
+                fontsize=10,
+                color='black'
+            )
+        
+        # Add title, subtitle, labels, and legend
+        target_name = target_data['auth_name'].iloc[0]
+        plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
+        plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+        plt.xlabel('Year', fontsize=14)
+        plt.ylabel(column, fontsize=14)
+        plt.legend(title='Authority Name', loc='upper left')
+        
+        # Save the plot
+        # make dir if not exists
+        col_results_dir = Path(diff_results_dir/column)
+        col_results_dir.mkdir(parents=True, exist_ok=True)
+        plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}.png'
+        plt.tight_layout()
+        plt.savefig(col_results_dir / plot_filename)
+        plt.close()
+        
+        ## Plot the avg controls against the target
+        plt.figure(figsize=(12, 8))
+        plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
+        avg_control_data = all_control_data.groupby('year')[column].mean().reset_index()
+        plt.plot(avg_control_data['year'], avg_control_data[column], label='Avg Control', color='grey', linestyle='--', linewidth=3)
+        
+        # Add vertical lines and annotations for each incident_year and incident_type combination
+        for _, row in incident_df.iterrows():
+            incident_year = row['incident_year']
+            incident_type = row['incident_type']
+            
+            plt.axvline(x=incident_year, color='grey', linestyle='--')
+            plt.text(
+                incident_year, 
+                plt.ylim()[1], 
+                incident_type,
+                rotation=90, 
+                verticalalignment='top',
+                fontsize=10,
+                color='black'
+            )
+        
+        # Add title, subtitle, labels, and legend
+        target_name = target_data['auth_name'].iloc[0]
+        plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
+        plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+        plt.xlabel('Year', fontsize=14)
+        plt.ylabel(column, fontsize=14)
+        plt.legend(title='Authority Name', loc='upper left')
+        
+        # Save the plot
+        # make dir if not exists
+        col_results_dir = Path(diff_results_dir/column)
+        col_results_dir.mkdir(parents=True, exist_ok=True)
+        plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}.png'
+        plt.tight_layout()
+        plt.savefig(col_results_dir / plot_filename)
+        plt.close()
+    
 
 def calc_diff_in_diff(
     df: pd.DataFrame, 
@@ -243,31 +368,29 @@ def calc_diff_in_diff(
     knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
     knn_results = pd.read_csv(knn_results_path)
     
-    all_step1_results = []
-    all_step2_results = []
-    all_compare_results = []
+    # all_step1_results = []
+    # all_step2_results = []
+    # all_compare_results = []
     # iterate over targets
     for target_id in tqdm(treatment_ids):
-        for (treatment_year, incident_type), group in df[df.index == target_id].groupby(['incident_year', 'incident_type']):
-            curr_df = df[(df['incident_type'] == incident_type) | (df['incident_type'].isnull())]
-            target_neighbors = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
-            assert len(target_neighbors) == k
-            
-            # Call the function
-            step_1_df, step_2_df = calc_diff_in_diff_per_target(curr_df, columns_to_predict, target_id, target_neighbors, treatment_year, incident_type)
-
-            # Call the function
-            compare_df = compare_pred_true_per_target(step_2_df, k, distance_metric, treatment_year, incident_type, diff_results_dir)
-            all_step1_results.append(step_1_df)
-            all_step2_results.append(step_2_df)
-            all_compare_results.append(compare_df)
+        control_auth_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
+        assert len(control_auth_ids) == k
+        plot_y_by_year(df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric)
+        
+        # for (treatment_year, incident_type), _ in df[df.index == target_id].groupby(['incident_year', 'incident_type']):
+        #     curr_df = df[(df['incident_type'] == incident_type) | (df['incident_type'].isnull())]
+        #     step_1_df, step_2_df = calc_diff_in_diff_per_target(curr_df, columns_to_predict, target_id, control_auth_ids, treatment_year, incident_type)
+        #     # compare_df = compare_pred_true_per_target(step_2_df, k, distance_metric, treatment_year, incident_type, diff_results_dir)
+        #     all_step1_results.append(step_1_df)
+        #     all_step2_results.append(step_2_df)
+        #     # all_compare_results.append(compare_df)
     
     # Save the updated compare_df
-    for results_list, file_name in zip([all_step1_results, all_step2_results, all_compare_results], ['step_1', 'step_2', 'compare']):
-        results_filename = f'{file_name}_based_on_k={k}_{distance_metric}.csv'
-        concat_df = pd.concat(results_list, ignore_index=True)
-        concat_df.to_csv(diff_results_dir / results_filename, index=False)
-        print(f"DF saved to {results_filename}")
+    # for results_list, file_name in zip([all_step1_results, all_step2_results, all_compare_results], ['step_1', 'step_2', 'compare']):
+    #     results_filename = f'{file_name}_based_on_k={k}_{distance_metric}.csv'
+    #     concat_df = pd.concat(results_list, ignore_index=True)
+    #     concat_df.to_csv(diff_results_dir / results_filename, index=False)
+    #     print(f"DF saved to {results_filename}")
 
 
 if __name__ == "__main__":

@@ -30,14 +30,15 @@ columns_to_predict = [
     'expenditures_change', 'operations_expenditures',
     'loan_repayment_expenditures', 'financing_expenditures',
     'special_budget_expenditures', 'budget_surplus_deficit',
-    'annual_surplus_deficit', 'cumulative_deficit']
+    'annual_surplus_deficit', 'cumulative_deficit'
+]
 
 infer_df.set_index('auth_id', inplace=True)
 
 calc_diff_in_diff(
     infer_df,
     columns_to_predict=columns_to_predict, 
-    treatment_ids=df_treatment['auth_id'].tolist(),
+    treatment_ids=df_treatment['auth_id'].unique(),
     k=10,
     distance_metric='cosine',
     results_dir=results_dir,
