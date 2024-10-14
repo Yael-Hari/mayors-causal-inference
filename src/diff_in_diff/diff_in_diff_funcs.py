@@ -4,6 +4,9 @@ from typing import List, Tuple
 from sklearn.linear_model import LinearRegression
 from pathlib import Path
 from tqdm import tqdm
+# import statsmodels.api as sm
+from statsmodels.formula.api import ols
+import numpy as np
 
 def calc_diff_in_diff_per_target(
     df: pd.DataFrame, 
@@ -393,8 +396,240 @@ def calc_diff_in_diff(
     #     print(f"DF saved to {results_filename}")
 
 
-if __name__ == "__main__":
+import numpy as np
+import pandas as pd
+from statsmodels.formula.api import ols
+import matplotlib.pyplot as plt
+import os
+
+# Ensure 'results' directory exists
+if not os.path.exists('results'):
+    os.makedirs('results')
+
+# Function to generate synthetic data
+def generate_data(n_units, n_timepoints, treatment_effect=0, autocorrelation=0.5):
+    units = np.repeat(np.arange(n_units), n_timepoints)
+    time = np.tile(np.arange(n_timepoints), n_units)
+    is_treatment = np.where(units >= n_units // 2, 1, 0)
+    is_post = np.where(time >= n_timepoints // 2, 1, 0)
+
+    # Simulate outcome with treatment effect and autocorrelation
+    np.random.seed()  # Ensure variability across simulations
+    error = np.random.randn(n_units * n_timepoints)
+    for i in range(1, len(error)):
+        if units[i] == units[i - 1]:
+            error[i] += autocorrelation * error[i - 1]
+
+    y = 2 + 0.5 * is_treatment + 1 * is_post + treatment_effect * is_treatment * is_post + error
+    data = pd.DataFrame({
+        'Y': y,
+        'IsTreatment': is_treatment,
+        'IsPost': is_post,
+        'Unit': units,
+        'time': time
+    })
+    return data
+
+def plot_data(data, n_units, n_timepoints, filename):
+    import matplotlib.pyplot as plt
+    import os
+
+    plt.figure(figsize=(10, 6))
+    units = data['Unit'].unique()
     
+    # Identify treatment and control units
+    treatment_units = units[units >= n_units // 2]
+    control_units = units[units < n_units // 2]
+    
+    # Define colors for control units using the provided palette
+    colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062',
+              '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
+    
+    # Map each control unit to a color from the palette
+    color_map = {}
+    for idx, unit in enumerate(control_units):
+        color_map[unit] = colors[idx % len(colors)]
+    
+    # Plot each unit's data
+    for unit in units:
+        unit_data = data[data['Unit'] == unit]
+        if unit in treatment_units:
+            plt.plot(
+                unit_data['time'], unit_data['Y'],
+                label=f'Unit {unit}',
+                color='#f5ce1c', linewidth=3)
+        else:
+            plt.plot(
+                unit_data['time'], unit_data['Y'],
+                label=f'Unit {unit}',
+                color=color_map[unit])
+    
+    # Add dashed vertical line at treatment time with label
+    treatment_time = n_timepoints // 2
+    plt.axvline(x=treatment_time, color='k', linestyle='--')
+    plt.text(
+        treatment_time + 0.1, plt.ylim()[1] * 0.95, 'Treatment',
+        rotation=90, verticalalignment='top')
+    
+    plt.xlabel('Time')
+    plt.ylabel('Y')
+    plt.title('Outcome over Time by Unit')
+    # Optionally, include legend if needed
+    # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.savefig(os.path.join('results', filename))
+    plt.close()
+
+
+# Function to compute DiD estimate and p-value
+def compute_did(data):
+    model = ols('Y ~ IsTreatment * IsPost', data=data).fit()
+    coef = model.params['IsTreatment:IsPost']
+    se = model.bse['IsTreatment:IsPost']
+    pvalue = model.pvalues['IsTreatment:IsPost']
+    return coef, se, pvalue
+
+# Function to compute DiD with clustered standard errors
+def compute_clustered_did(data):
+    model = ols('Y ~ IsTreatment * IsPost', data=data).fit()
+    clustered_model = model.get_robustcov_results(cov_type='cluster', groups=data['Unit'])
+    
+    # Convert NumPy arrays to pandas Series with index labels
+    params = pd.Series(clustered_model.params, index=model.params.index)
+    bse = pd.Series(clustered_model.bse, index=model.bse.index)
+    pvalues = pd.Series(clustered_model.pvalues, index=model.pvalues.index)
+    
+    coef = params['IsTreatment:IsPost']
+    se = bse['IsTreatment:IsPost']
+    pvalue = pvalues['IsTreatment:IsPost']
+    return coef, se, pvalue
+
+# Permutation testing with unit-level shuffling
+def permutation_test(data, n_permutations=100):
+    n_units = data['Unit'].nunique()
+    units = data['Unit'].unique()
+    # Original estimate
+    coef_original, _, _ = compute_did(data)
+    permuted_did = []
+
+    for _ in range(n_permutations):
+        # Randomly assign treatment to units
+        shuffled_units = np.random.permutation(units)
+        half = n_units // 2
+        treatment_units = shuffled_units[:half]
+        # Create a mapping from units to IsTreatment
+        unit_treatment_mapping = {unit: 1 if unit in treatment_units else 0 for unit in units}
+        # Apply the shuffled IsTreatment to the data
+        shuffled_data = data.copy()
+        shuffled_data['IsTreatment'] = shuffled_data['Unit'].map(unit_treatment_mapping)
+        coef_perm, _, _ = compute_did(shuffled_data)
+        permuted_did.append(coef_perm)
+
+    p_value = np.mean([abs(did) >= abs(coef_original) for did in permuted_did])
+    return p_value
+
+# Function to plot the results
+def plot_results(results, filename):
+    methods = results['method']
+    fpr = [results['false_positive_rate'][method] for method in methods]
+    power = [results['power'][method] for method in methods]
+
+    plt.figure(figsize=(8, 6))
+    scatter = plt.scatter(power, fpr, c=range(len(methods)), cmap='viridis', s=100)
+
+    # Add method labels
+    for i, method in enumerate(methods):
+        plt.text(power[i], fpr[i], method, fontsize=9, ha='right')
+
+    # Add x-lines at 0, 0.8 (red), and 1
+    plt.axvline(x=0, color='black', linestyle='--', linewidth=1)
+    plt.axvline(x=0.8, color='red', linestyle='--', linewidth=1)
+    plt.axvline(x=1, color='black', linestyle='--', linewidth=1)
+
+    # Add y-lines at 0 and 1
+    plt.axhline(y=0, color='black', linestyle='--', linewidth=1)
+    plt.axhline(y=1, color='black', linestyle='--', linewidth=1)
+
+    plt.xlabel('Power')
+    plt.ylabel('False Positive Rate')
+    plt.title('Method Comparison')
+    plt.tight_layout()
+
+    # Save the figure to the specified directory
+    plt.savefig(os.path.join('results', filename))
+    plt.close()
+
+# Function to run simulations and compare methods
+def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect):
+    methods = ['OLS', 'Clustered SE', 'Permutation']
+    results = {
+        'method': methods,
+        'false_positive_rate': {},
+        'power': {}
+    }
+
+    # Counters for false positives and power
+    false_positive_count = {method: 0 for method in methods}
+    power_count = {method: 0 for method in methods}
+
+    # Run simulations
+    for sim in tqdm(range(n_simulations), desc="Simulations Progress"):
+        # Generate data with no treatment effect for false positive tests
+        data_no_effect = generate_data(n_units, n_timepoints, treatment_effect=0)
+        if sim == 0:
+            plot_data(data_no_effect, n_units, n_timepoints, f'data_no_effect_{n_units=}.png')
+
+        # Generate data with treatment effect for power tests
+        data_with_effect = generate_data(n_units, n_timepoints, treatment_effect=treatment_effect)
+        if sim == 0:
+            plot_data(data_with_effect, n_units, n_timepoints, f'data_with_effect_{n_units=}.png')
+
+        # OLS method
+        _, _, pvalue_ols_no_effect = compute_did(data_no_effect)
+        _, _, pvalue_ols_with_effect = compute_did(data_with_effect)
+        if pvalue_ols_no_effect < 0.05:
+            false_positive_count['OLS'] += 1
+        if pvalue_ols_with_effect < 0.05:
+            power_count['OLS'] += 1
+
+        # Clustered Standard Errors
+        _, _, pvalue_cluster_no_effect = compute_clustered_did(data_no_effect)
+        _, _, pvalue_cluster_with_effect = compute_clustered_did(data_with_effect)
+        if pvalue_cluster_no_effect < 0.05:
+            false_positive_count['Clustered SE'] += 1
+        if pvalue_cluster_with_effect < 0.05:
+            power_count['Clustered SE'] += 1
+
+        # Permutation test
+        p_value_no_effect = permutation_test(data_no_effect)
+        p_value_with_effect = permutation_test(data_with_effect)
+        if p_value_no_effect < 0.05:
+            false_positive_count['Permutation'] += 1
+        if p_value_with_effect < 0.05:
+            power_count['Permutation'] += 1
+
+    # Calculate false positive rates and power
+    for method in methods:
+        results['false_positive_rate'][method] = false_positive_count[method] / n_simulations
+        results['power'][method] = power_count[method] / n_simulations
+
+    # Print results
+    print(f"False Positive Rates: {results['false_positive_rate']}")
+    print(f"Power: {results['power']}")
+
+    return results
+
+def run_simulation_with_did_comparison():
+    # Run the simulation and comparison
+    n_simulations = 100  # Number of simulations for statistical reliability
+    n_timepoints = 8
+    treatment_effect = 1  # Adjust based on desired effect size
+    
+    for n_units in [10, 30, 50]:
+        results = compare_methods(n_simulations, n_units, n_timepoints, treatment_effect)
+        plot_results(results, f'methods_comparison_plot_n_units={n_units}.png')
+
+def run_simultation_with_simple_did():
     # Example DataFrame
     inference_df = pd.DataFrame({
         'auth_id': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7],
@@ -408,7 +643,7 @@ if __name__ == "__main__":
         'incident_year': [None, None, None, None, None, None, None, None, None, None, 2001, 2001, 2001, 2001, 2001, 2001]
     })
     inference_df.set_index('auth_id', inplace=True)
-
+    
     # New data for 2004
     new_data = pd.DataFrame({
         'auth_id': [1, 2, 3, 4, 5, 6, 7],
@@ -445,3 +680,13 @@ if __name__ == "__main__":
         results_dir=results_dir,
         diff_results_dir=(results_dir / 'diff'),
     )
+    
+
+if __name__ == "__main__":
+    # run_simultation_with_simple_did()
+    run_simulation_with_did_comparison()
+
+
+
+    
+
