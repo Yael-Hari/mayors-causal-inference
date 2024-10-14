@@ -430,7 +430,7 @@ def generate_data(n_units, n_timepoints, treatment_effect=0, autocorrelation=0.5
     })
     return data
 
-def plot_data(data, n_units, n_timepoints, filename):
+def plot_data(data, n_units, n_timepoints, results_dir, filename):
     import matplotlib.pyplot as plt
     import os
 
@@ -477,7 +477,7 @@ def plot_data(data, n_units, n_timepoints, filename):
     # Optionally, include legend if needed
     # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.savefig(os.path.join('results', filename))
+    plt.savefig(results_dir / filename)
     plt.close()
 
 
@@ -529,7 +529,7 @@ def permutation_test(data, n_permutations=100):
     return p_value
 
 # Function to plot the results
-def plot_results(results, filename):
+def plot_results(results, results_dir, filename):
     methods = results['method']
     fpr = [results['false_positive_rate'][method] for method in methods]
     power = [results['power'][method] for method in methods]
@@ -556,11 +556,11 @@ def plot_results(results, filename):
     plt.tight_layout()
 
     # Save the figure to the specified directory
-    plt.savefig(os.path.join('results', filename))
+    plt.savefig(results_dir / filename)
     plt.close()
 
 # Function to run simulations and compare methods
-def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect):
+def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect, results_dir):
     methods = ['OLS', 'Clustered SE', 'Permutation']
     results = {
         'method': methods,
@@ -577,12 +577,12 @@ def compare_methods(n_simulations, n_units, n_timepoints, treatment_effect):
         # Generate data with no treatment effect for false positive tests
         data_no_effect = generate_data(n_units, n_timepoints, treatment_effect=0)
         if sim == 0:
-            plot_data(data_no_effect, n_units, n_timepoints, f'data_no_effect_{n_units=}.png')
+            plot_data(data_no_effect, n_units, n_timepoints, results_dir, f'data_no_effect_{n_units=}.png')
 
         # Generate data with treatment effect for power tests
         data_with_effect = generate_data(n_units, n_timepoints, treatment_effect=treatment_effect)
         if sim == 0:
-            plot_data(data_with_effect, n_units, n_timepoints, f'data_with_effect_{n_units=}.png')
+            plot_data(data_with_effect, n_units, n_timepoints, results_dir, f'data_with_effect_{n_units=}.png')
 
         # OLS method
         _, _, pvalue_ols_no_effect = compute_did(data_no_effect)
@@ -625,9 +625,13 @@ def run_simulation_with_did_comparison():
     n_timepoints = 8
     treatment_effect = 1  # Adjust based on desired effect size
     
+    src_path = Path.cwd() / 'src'
+    print(src_path)
+    results_dir = src_path / 'results' / 'simulation_did'
+    
     for n_units in [10, 30, 50]:
-        results = compare_methods(n_simulations, n_units, n_timepoints, treatment_effect)
-        plot_results(results, f'methods_comparison_plot_n_units={n_units}.png')
+        results = compare_methods(n_simulations, n_units, n_timepoints, treatment_effect, results_dir)
+        plot_results(results, results_dir, f'methods_comparison_plot_n_units={n_units}.png')
 
 def run_simultation_with_simple_did():
     # Example DataFrame
