@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,OLS,OLS + FE,Clustered SE,Permutation
+1034,קריית מלאכי,2012.0,arrest,contacting_local_authority,264,9,,,,1.0
+1034,קריית מלאכי,2013.0,conviction,contacting_local_authority,264,9,,,,1.0
+2630,קריית גת,2009.0,conviction,contacting_local_authority,264,11,,,,1.0
+2650,רמת השרון,2003.0,conviction,contacting_local_authority,264,2,,,,0.2
+2650,רמת השרון,2013.0,indictment filed,contacting_local_authority,264,2,,,,1.0
+2650,רמת השרון,2014.0,conviction,contacting_local_authority,264,2,,,,1.0
+3000,ירושלים,2010.0,arrest,contacting_local_authority,264,11,,,,1.0
+3000,ירושלים,2012.0,indictment filed,contacting_local_authority,264,11,,,,1.0
+3000,ירושלים,2014.0,conviction,contacting_local_authority,264,11,,,,1.0
+6200,בת ים,2009.0,arrest,contacting_local_authority,264,10,,,,1.0
+6200,בת ים,2013.0,indictment filed,contacting_local_authority,264,10,,,,1.0
+6200,בת ים,2014.0,conviction,contacting_local_authority,264,10,,,,1.0
+6500,חדרה,2005.0,conviction,contacting_local_authority,264,8,0.5249961199300079,,,0.44
+6700,טבריה,2007.0,arrest,contacting_local_authority,264,10,,,,1.0
+6700,טבריה,2010.0,indictment filed,contacting_local_authority,264,10,,,,1.0
+6700,טבריה,2011.0,indictment filed,contacting_local_authority,264,10,,,,1.0
+6700,טבריה,2015.0,conviction,contacting_local_authority,264,10,,,,1.0
+6900,כפר סבא,2017.0,arrest,contacting_local_authority,264,8,,,,1.0
+6900,כפר סבא,2018.0,indictment filed,contacting_local_authority,264,8,,,,1.0
+6900,כפר סבא,2021.0,conviction,contacting_local_authority,264,8,,,,1.0
+7000,לוד,2006.0,arrest,contacting_local_authority,264,11,0.7878602601303651,,,0.93
+7000,לוד,2006.0,indictment filed,contacting_local_authority,264,11,0.7878602601303651,,,0.91
+7000,לוד,2010.0,conviction,contacting_local_authority,264,11,,,,1.0
+7100,אשקלון,2016.0,arrest,contacting_local_authority,264,10,,,,1.0
+7100,אשקלון,2017.0,indictment filed,contacting_local_authority,264,10,,,,1.0
+7100,אשקלון,2019.0,conviction,contacting_local_authority,264,10,,,,1.0
+8000,צפת,2016.0,conviction,contacting_local_authority,264,4,,,,1.0
+8400,רחובות,2008.0,conviction,contacting_local_authority,264,6,,,,1.0
+8600,רמת גן,2013.0,indictment filed,contacting_local_authority,264,11,,,,1.0
+8600,רמת גן,2015.0,conviction,contacting_local_authority,264,11,,,,1.0
+9100,נהרייה,2008.0,conviction,contacting_local_authority,264,9,,,,1.0
