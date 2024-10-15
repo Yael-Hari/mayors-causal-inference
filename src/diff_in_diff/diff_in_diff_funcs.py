@@ -701,24 +701,27 @@ def test_simple_did():
         diff_results_dir=(results_dir / 'diff'),
     )
     
-def run_did_analysis_per_target(data: pd.DataFrame):
+def run_did_analysis_per_target(data: pd.DataFrame, imputed: bool):
     p_vals = {}
     
     # OLS method
-    _, _, pvalue_ols_no_effect = compute_did(data)
-    p_vals['OLS'] = pvalue_ols_no_effect
+    _, _, pvalue_ols = compute_did(data)
+    p_vals['OLS'] = pvalue_ols
 
     # Fixed Effects method 
-    _, _, pvalue_fe_no_effect = compute_did_fixed_effects(data)
-    p_vals['OLS + FE'] = pvalue_fe_no_effect
+    _, _, pvalue_fe = compute_did_fixed_effects(data)
+    p_vals['OLS + FE'] = pvalue_fe
 
     # Clustered Standard Errors
-    _, _, pvalue_cluster_no_effect = compute_clustered_did(data)
-    p_vals['Clustered SE'] = pvalue_cluster_no_effect
+    if imputed:
+        _, _, pvalue_cluster = compute_clustered_did(data)
+        p_vals['Clustered SE'] = pvalue_cluster
+    else:
+        p_vals['Clustered SE'] = np.nan
     
     # Permutation test
-    p_value_no_effect = permutation_test(data, n_treatment_units=1)
-    p_vals['Permutation'] = p_value_no_effect
+    p_value_perm = permutation_test(data, n_treatment_units=1)
+    p_vals['Permutation'] = p_value_perm
     
     return p_vals
 
@@ -733,7 +736,9 @@ def get_data_by_target_and_incident(infer_df, target_id, incident_year, incident
     # filter by id
     filtered_df = infer_df[(infer_df['auth_id'] == target_id) | (infer_df['auth_id'].isin(control_ids))].reset_index(drop=True)
     # filter by incident
-    filtered_df = filtered_df[(filtered_df['incident_year'] == incident_year) & (filtered_df['incident_type'] == incident_type)]
+    filtered_df = filtered_df[
+        ((filtered_df['incident_year'] == incident_year) | (filtered_df['incident_year'].isna())) 
+        & ((filtered_df['incident_type'] == incident_type) | (filtered_df['incident_type'].isna()))].reset_index(drop=True)
     # add IsTreatment
     filtered_df['IsTreatment'] = np.where(filtered_df['auth_id'] == target_id, 1, 0)
     # add IsPost
@@ -741,16 +746,27 @@ def get_data_by_target_and_incident(infer_df, target_id, incident_year, incident
     # select relevant columns
     filtered_df = filtered_df[['auth_id', 'year', 'IsTreatment', 'IsPost', col_to_predict]]
     # rename columns
-    filtered_df.rename(columns={col_to_predict: 'Y'}, inplace=True)
+    filtered_df.rename(columns={col_to_predict: 'Y', 'auth_id': 'Unit', 'year': 'time'}, inplace=True)
     return filtered_df
 
-def run_did_analysis(infer_df: pd.DataFrame, columns_to_predict: List[str], treatment_ids: List[str], k: int, distance_metric: str, results_dir: str, diff_results_dir: bool, imputed: bool, placebo: bool):
+def run_did_analysis(
+        infer_df: pd.DataFrame, 
+        columns_to_predict: List[str], 
+        treatment_ids: List[str], 
+        k: int, 
+        distance_metric: str, 
+        results_dir: str, 
+        diff_results_dir: bool, 
+        imputed: bool, 
+        placebo: bool, 
+        placebo_ids: List[str] = None
+    ):
     # placebo params
     if placebo:
         treatment_ids = placebo_ids
         incident_df = get_placebo_incident_df()
     else:
-        incident_df = infer_df[['incident_year', 'incident_type']].drop_duplicates()
+        incident_df = infer_df[['auth_id', 'incident_year', 'incident_type']].drop_duplicates()
     
     knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
     knn_results = pd.read_csv(knn_results_path)
@@ -767,22 +783,26 @@ def run_did_analysis(infer_df: pd.DataFrame, columns_to_predict: List[str], trea
             assert len(control_ids) == k
             
             # iterate over incidents
-            incident_df = incident_df[incident_df['auth_id'] == target_id]
-            for _, row in incident_df.iterrows():
+            curr_incident_df = incident_df[incident_df['auth_id'] == target_id]
+            for _, row in curr_incident_df.iterrows():
                 incident_year = row['incident_year']
                 incident_type = row['incident_type']
                 
                 # filter data
                 target_df = get_data_by_target_and_incident(infer_df, target_id, incident_year, incident_type, control_ids, col_to_predict)
                 # get p vals dict
-                p_vals = run_did_analysis_per_target(target_df)
+                p_vals = run_did_analysis_per_target(target_df, imputed)
                 # append results
+                target_name = infer_df[infer_df['auth_id'] == target_id]['auth_name'].iloc[0]
                 results.append(pd.DataFrame([{
                     'target_id': target_id,
+                    'target_name': target_name,
                     'incident_year': incident_year,
                     'incident_type': incident_type,
                     'column': col_to_predict,
-                    'p_vals': p_vals
+                    'p_vals': p_vals,
+                    'n_rows_data': len(target_df),
+                    'n_rows_notna': target_df['Y'].notna().sum()
                 }]))
                 
         results_df = pd.concat(results, ignore_index=True)
@@ -803,7 +823,7 @@ if __name__ == "__main__":
     diff_results_dir = results_dir / 'diff'
     imputed = False
     placebo = False
-    infer_df = get_infer_df(imputed, placebo)
+    infer_df = get_infer_df(imputed)
     
     # plot_y_by_year_for_all(        
     #     infer_df,
