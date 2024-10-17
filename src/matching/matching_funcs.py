@@ -4,6 +4,9 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import List
+from tqdm import tqdm
+from src.matching.create_vecs import create_vecs
+from src.const import treatment_ids
 
 def match_and_plot_per_target(matching_df: pd.DataFrame, matching_cols: List[str], k: int, target_id: int, results_dir: str, metric='euclidean'):
     """
@@ -95,7 +98,7 @@ def match_and_plot_per_target(matching_df: pd.DataFrame, matching_cols: List[str
     results_df = pd.DataFrame(results)
     return results_df
 
-def match_and_plot(df_treatment: pd.DataFrame, df_control: pd.DataFrame, matching_cols: List[str],k: int, metric: str, results_dir: str):
+def match_and_plot(df_treatment: pd.DataFrame, df_control: pd.DataFrame, matching_cols: List[str],k: int, metric: str, results_dir: str, placebo: bool = False):
     """
     Match each target authority with the k nearest neighbors in the control group based on the specified columns.
 
@@ -120,13 +123,13 @@ def match_and_plot(df_treatment: pd.DataFrame, df_control: pd.DataFrame, matchin
         print(results_df)
         
             # Save the results DataFrame
-    results_filename = f'knn_results_k={k}_{metric}.csv'
+    results_filename = f'knn_results_k={k}_{metric}_placebo={placebo}.csv'
     all_targets_results = pd.concat(all_targets_results, ignore_index=True)
     all_targets_results.to_csv(results_dir / results_filename, index=False)
     
     print(f"Results DataFrame saved as {results_filename}")
 
-if __name__ == '__main__':
+def test_match_and_plot():
     metric = 'euclidean' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
 
     # Example DataFrame
@@ -155,3 +158,79 @@ if __name__ == '__main__':
     metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
     matching_cols=['feature1', 'feature2']
     match_and_plot(df_treatment, df_control, matching_cols, k, metric, knn_results_dir)
+
+def run_matching(k, metric):
+    src_path = Path.cwd() / 'src'
+
+    df_matching = pd.read_csv(src_path / 'data/matching_features_df.csv')
+    df_matching = df_matching.rename(columns={'authority_code': 'auth_id', 'authority_name': 'auth_name'})
+    df_treatment = df_matching[df_matching['is_treatment'] == 1]
+    df_control = df_matching[df_matching['is_treatment'] == 0]
+    
+    control_vecs = create_vecs(df_control, method="concat")
+    treatment_vecs = create_vecs(df_treatment, method="concat")
+    results_dir_knn = src_path / 'results' / 'knn'
+
+    concat_matching_cols = treatment_vecs.columns.difference(['auth_id', 'auth_name', 'is_treatment']).to_list()
+    
+    match_and_plot(treatment_vecs, control_vecs, concat_matching_cols, k, metric, results_dir_knn)
+
+def get_placebo_targets(results_dir_knn: str, treatment_ids: List[str], k: int, metric: str):
+    # for each real target, create a placebo target
+    # for each real target, read the results of k nearest neighbors, sample one of them and add to list
+    
+    placebo_targets = []
+    placebo_names = []
+    for target_id in treatment_ids:
+        # read the results of k nearest neighbors
+        results_filename = f'knn_results_k={k}_{metric}.csv'
+        results_df = pd.read_csv(results_dir_knn / results_filename)
+        target_results = results_df[(results_df['target_id'] == target_id) & (results_df['is_nn'])]
+        # sample one of them
+        sampled_target = target_results.sample(1)
+        # sample again if the sampled target is already in the placebo_targets
+        while sampled_target['control_id'].values[0] in placebo_targets:
+            sampled_target = target_results.sample(1)
+        placebo_targets.append(sampled_target['control_id'].values[0])
+        placebo_names.append(sampled_target['control_name'].values[0])
+    
+    # save placebo targets to a file
+    placebo_targets_df = pd.DataFrame(
+        {'treatment_id': treatment_ids, 'placebo_id': placebo_targets, 'placebo_name': placebo_names})
+    placebo_targets_df.to_csv(results_dir_knn / 'placebo_targets.csv', index=False)
+    
+    return placebo_targets
+
+def run_matching_placebo(k, metric, placebo_targets):
+
+    df_matching = pd.read_csv(src_path / 'data/matching_features_df.csv')
+    df_matching = df_matching.rename(columns={'authority_code': 'auth_id', 'authority_name': 'auth_name'})
+    
+    # for each placebo target get the k nearest neighbors
+    for placebo_target in tqdm(placebo_targets):
+        df_control = df_matching[(df_matching['is_treatment'] == 0)]
+        control_vecs = create_vecs(df_control, method="concat")
+        concat_matching_cols = control_vecs.columns.difference(['auth_id', 'auth_name', 'is_treatment']).to_list()
+        # seperate placebo target from control
+        placebo_target_vec = control_vecs[control_vecs['auth_id'] == placebo_target]
+        placebo_control_vecs = control_vecs[control_vecs['auth_id'] != placebo_target]
+        match_and_plot(placebo_target_vec, placebo_control_vecs, concat_matching_cols, k, metric, results_dir_knn, placebo=True)
+
+if __name__ == '__main__':
+    src_path = Path.cwd() / 'src'
+    results_dir_knn = src_path / 'results' / 'knn'
+    
+    test_match_and_plot
+    
+    k = 10
+    metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
+    run_matching(k, metric)
+    
+    k_for_sampling_placebo = 3
+    k = 10
+    metric = 'cosine'
+    placebo_targets = get_placebo_targets(results_dir_knn, treatment_ids, k=k_for_sampling_placebo, metric=metric)
+    placebo_df = pd.read_csv(results_dir_knn / 'placebo_targets.csv')
+    placebo_targets = placebo_df['placebo_id'].to_list()
+    run_matching_placebo(k, metric, placebo_targets)
+    
