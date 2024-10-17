@@ -10,7 +10,7 @@ only_one_year_needed_col = ['year_of_municipal_status']
 
 columns_to_predict = ['cumulative_deficit']
 treatment_ids = [1034, 2630, 2650, 3000, 6200, 6500, 6700, 6900, 7000, 7100, 8000, 8400, 8600, 9100]
-placebo_ids = [] # TODO: Add placebo IDs
+placebo_ids = [31, 1031, 587, 70, 9600, 7700, 9200, 9700, 8500, 7800, 3660, 7200, 8700, 2800]
 
 columns_to_predict = [
     'total_in_migration', 'male_in_migration',
