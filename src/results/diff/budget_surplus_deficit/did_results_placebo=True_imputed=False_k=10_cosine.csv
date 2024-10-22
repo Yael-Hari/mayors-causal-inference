@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data,OLS,OLS + FE,Clustered SE,Permutation
+31,אופקים,2012,arrest,budget_surplus_deficit,192,162,True,0.029824345689919894,0.022812959559515737,3.187604200834597e-05,0.12
+31,אופקים,2013,conviction,budget_surplus_deficit,192,162,True,0.07561385173734812,0.07665469583227126,0.00017998512511281954,0.11
+1031,שדרות,2009,conviction,budget_surplus_deficit,192,163,False,,,,
+587,סביון,2003,conviction,budget_surplus_deficit,264,246,False,,,,
+587,סביון,2013,indictment filed,budget_surplus_deficit,264,246,True,0.12209418339045938,0.08854280761042478,0.015358670143862009,0.35
+587,סביון,2014,conviction,budget_surplus_deficit,264,246,True,0.10583604281838499,0.07447909150717835,0.009519441652652344,0.37
+70,אשדוד,2010,arrest,budget_surplus_deficit,264,214,True,0.21141004621437537,0.09415004679893274,0.004655249074162379,0.51
+70,אשדוד,2012,indictment filed,budget_surplus_deficit,264,214,True,0.3999704222966347,0.2665819229764167,0.062197096833986235,0.66
+70,אשדוד,2014,conviction,budget_surplus_deficit,264,214,True,0.6482693779787172,0.5537642808842035,0.36684356797878404,0.9
+9600,קריית ים,2009,arrest,budget_surplus_deficit,216,184,False,,,,
+9600,קריית ים,2013,indictment filed,budget_surplus_deficit,216,184,True,0.09743490669498531,0.028971660422845744,0.00015281727932273253,0.09
+9600,קריית ים,2014,conviction,budget_surplus_deficit,216,184,True,0.10499204365743728,0.03512280718332657,0.00024092664467991224,0.23
+7700,עפולה,2005,conviction,budget_surplus_deficit,168,150,True,0.005680195238803845,0.007419012648524468,0.0106891192549969,0.3
+9200,בית שאן,2007,arrest,budget_surplus_deficit,192,171,False,,,,
+9200,בית שאן,2010,indictment filed,budget_surplus_deficit,192,171,False,,,,
+9200,בית שאן,2011,indictment filed,budget_surplus_deficit,192,171,False,,,,
+9200,בית שאן,2015,conviction,budget_surplus_deficit,192,171,True,0.01213794025776907,0.007978011044892453,6.121246837518514e-06,0.09
+9700,הוד השרון,2017,arrest,budget_surplus_deficit,216,182,True,0.06751190204291795,0.009535336288508662,0.030466968171168833,0.26
+9700,הוד השרון,2018,indictment filed,budget_surplus_deficit,216,182,True,0.03710646012048885,0.002928271550747737,0.029509943085138116,0.23
+9700,הוד השרון,2021,conviction,budget_surplus_deficit,216,182,True,0.011807033892962785,0.0001657415607462931,4.833210552262629e-05,0.33
+8500,רמלה,2006,arrest,budget_surplus_deficit,240,194,False,,,,
+8500,רמלה,2006,indictment filed,budget_surplus_deficit,240,194,False,,,,
+8500,רמלה,2010,conviction,budget_surplus_deficit,240,194,False,,,,
+7800,פרדס חנה-כרכור,2016,arrest,budget_surplus_deficit,168,151,True,0.8545002499860457,0.8554022727220534,0.7703039937172402,1.0
+7800,פרדס חנה-כרכור,2017,indictment filed,budget_surplus_deficit,168,151,True,0.9824504114265538,0.9378669140574794,0.9732814114701591,1.0
+7800,פרדס חנה-כרכור,2019,conviction,budget_surplus_deficit,168,151,True,0.6429617703899896,0.5272877641294622,0.5193664248959506,0.82
+3660,עמנואל,2016,conviction,budget_surplus_deficit,240,226,False,,,,
+7200,נס ציונה,2008,conviction,budget_surplus_deficit,192,165,False,,,,
+8700,רעננה,2013,indictment filed,budget_surplus_deficit,216,176,True,0.12482105794513722,0.020132676682941653,0.005097231828733306,0.26
+8700,רעננה,2015,conviction,budget_surplus_deficit,216,176,True,0.051173711617451226,0.0033624660546266176,0.006110633892612532,0.27
+2800,קריית שמונה,2008,conviction,budget_surplus_deficit,216,192,False,,,,

@@ -122,12 +122,13 @@ def match_and_plot(df_treatment: pd.DataFrame, df_control: pd.DataFrame, matchin
         all_targets_results.append(results_df)
         print(results_df)
         
-            # Save the results DataFrame
+    # Save the results DataFrame
     results_filename = f'knn_results_k={k}_{metric}_placebo={placebo}.csv'
     all_targets_results = pd.concat(all_targets_results, ignore_index=True)
     all_targets_results.to_csv(results_dir / results_filename, index=False)
     
     print(f"Results DataFrame saved as {results_filename}")
+    return all_targets_results
 
 def test_match_and_plot():
     metric = 'euclidean' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
@@ -206,6 +207,7 @@ def run_matching_placebo(k, metric, placebo_targets):
     df_matching = pd.read_csv(src_path / 'data/matching_features_df.csv')
     df_matching = df_matching.rename(columns={'authority_code': 'auth_id', 'authority_name': 'auth_name'})
     
+    all_dfs = []
     # for each placebo target get the k nearest neighbors
     for placebo_target in tqdm(placebo_targets):
         df_control = df_matching[(df_matching['is_treatment'] == 0)]
@@ -214,22 +216,28 @@ def run_matching_placebo(k, metric, placebo_targets):
         # seperate placebo target from control
         placebo_target_vec = control_vecs[control_vecs['auth_id'] == placebo_target]
         placebo_control_vecs = control_vecs[control_vecs['auth_id'] != placebo_target]
-        match_and_plot(placebo_target_vec, placebo_control_vecs, concat_matching_cols, k, metric, results_dir_knn, placebo=True)
+        results = match_and_plot(placebo_target_vec, placebo_control_vecs, concat_matching_cols, k, metric, results_dir_knn, placebo=True)
+        all_dfs.append(results)
+        
+    # Save the results DataFrame
+    results_filename = f'knn_results_k={k}_{metric}_placebo=True.csv'
+    all_targets_results = pd.concat(all_dfs, ignore_index=True)
+    all_targets_results.to_csv(results_dir_knn / results_filename, index=False)
 
 if __name__ == '__main__':
     src_path = Path.cwd() / 'src'
     results_dir_knn = src_path / 'results' / 'knn'
     
-    test_match_and_plot
+    # test_match_and_plot
     
-    k = 10
-    metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
-    run_matching(k, metric)
+    # k = 10
+    # metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
+    # run_matching(k, metric)
     
     k_for_sampling_placebo = 3
     k = 10
     metric = 'cosine'
-    placebo_targets = get_placebo_targets(results_dir_knn, treatment_ids, k=k_for_sampling_placebo, metric=metric)
+    # placebo_targets = get_placebo_targets(results_dir_knn, treatment_ids, k=k_for_sampling_placebo, metric=metric)
     placebo_df = pd.read_csv(results_dir_knn / 'placebo_targets.csv')
     placebo_targets = placebo_df['placebo_id'].to_list()
     run_matching_placebo(k, metric, placebo_targets)

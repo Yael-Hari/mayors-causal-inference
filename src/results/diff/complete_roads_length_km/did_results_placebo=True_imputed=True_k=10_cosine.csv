@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data,OLS,OLS + FE,Clustered SE,Permutation
+31,אופקים,2012,arrest,complete_roads_length_km,192,168,False,,,,
+31,אופקים,2013,conviction,complete_roads_length_km,192,168,False,,,,
+1031,שדרות,2009,conviction,complete_roads_length_km,192,192,True,0.565871478584742,0.5600780789576647,0.03208448604964049,0.29
+587,סביון,2003,conviction,complete_roads_length_km,264,192,False,,,,
+587,סביון,2014,conviction,complete_roads_length_km,264,192,False,,,,
+587,סביון,2013,indictment filed,complete_roads_length_km,264,192,False,,,,
+70,אשדוד,2010,arrest,complete_roads_length_km,264,264,True,0.9971776594542843,0.9965843119609825,0.9921797967380854,1.0
+70,אשדוד,2014,conviction,complete_roads_length_km,264,264,True,0.6386638454758042,0.5683411179150704,0.1710597405668347,0.69
+70,אשדוד,2012,indictment filed,complete_roads_length_km,264,264,True,0.7091470267106978,0.6509689787532079,0.2502155076514211,0.8
+9600,קריית ים,2009,arrest,complete_roads_length_km,216,216,True,0.7527905105647257,0.7389729775025864,0.6270070165046729,1.0
+9600,קריית ים,2014,conviction,complete_roads_length_km,216,216,True,0.4657069611345229,0.44188132415591275,0.5048156325578813,0.76
+9600,קריית ים,2013,indictment filed,complete_roads_length_km,216,216,True,0.5675003494502582,0.5455033573802808,0.55917463407468,0.85
+7700,עפולה,2005,conviction,complete_roads_length_km,168,168,True,0.42436166852960366,0.41464491236313605,0.19847732492843084,0.69
+9200,בית שאן,2007,arrest,complete_roads_length_km,192,168,False,,,,
+9200,בית שאן,2015,conviction,complete_roads_length_km,192,168,False,,,,
+9200,בית שאן,2010,indictment filed,complete_roads_length_km,192,168,False,,,,
+9200,בית שאן,2011,indictment filed,complete_roads_length_km,192,168,False,,,,
+9700,הוד השרון,2017,arrest,complete_roads_length_km,216,216,True,0.005492514278872854,0.003404221052552167,0.007422836572257627,0.23
+9700,הוד השרון,2021,conviction,complete_roads_length_km,216,216,True,0.49629277045145126,0.4554608717848043,0.19133821935921064,0.85
+9700,הוד השרון,2018,indictment filed,complete_roads_length_km,216,216,True,0.020154916033596745,0.0131133099919876,0.006101813557531961,0.21
+8500,רמלה,2006,arrest,complete_roads_length_km,240,240,True,0.2643709290965484,0.2621914189135833,0.051231720348624464,0.35
+8500,רמלה,2010,conviction,complete_roads_length_km,240,240,True,0.031491721070361633,0.030516941413509625,9.267674755295989e-06,0.08
+8500,רמלה,2006,indictment filed,complete_roads_length_km,240,240,True,0.2643709290965484,0.2621914189135833,0.051231720348624464,0.39
+7800,פרדס חנה-כרכור,2016,arrest,complete_roads_length_km,168,168,True,0.7442582733055727,0.7449313934813151,0.6376814422895453,0.86
+7800,פרדס חנה-כרכור,2019,conviction,complete_roads_length_km,168,168,True,0.9980481983923628,0.9980529677041633,0.9936972771385615,1.0
+7800,פרדס חנה-כרכור,2017,indictment filed,complete_roads_length_km,168,168,True,0.5715152115948358,0.5732788554682209,0.4416260033589134,0.85
+3660,עמנואל,2016,conviction,complete_roads_length_km,240,216,False,,,,
+7200,נס ציונה,2008,conviction,complete_roads_length_km,192,192,True,0.04511583056162015,0.033618755715817995,0.00019224731122698816,0.11
+8700,רעננה,2015,conviction,complete_roads_length_km,216,216,True,0.15819059359948887,0.14065547927820998,0.05613979778054605,0.56
+8700,רעננה,2013,indictment filed,complete_roads_length_km,216,216,True,0.04055744607791726,0.031484469033258744,0.008318213203259565,0.43
+2800,קריית שמונה,2008,conviction,complete_roads_length_km,216,192,False,,,,

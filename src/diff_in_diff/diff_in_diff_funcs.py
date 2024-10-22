@@ -176,7 +176,8 @@ def plot_y_by_year(
     columns_to_predict: List[str],
     diff_results_dir: str,
     k: int,
-    distance_metric: str
+    distance_metric: str,
+    placebo: bool
     ):
     """
     Plot the values of the columns to predict for the target authority and its neighbors over the years.
@@ -210,10 +211,10 @@ def plot_y_by_year(
     # Plot original data
     for column in columns_to_predict:
         _control_vs_target_plot(
-            target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric
+            target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric, placebo
         )
         _avg_controls_plot(
-            target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric
+            target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric, placebo
         )
 
     # Imputed Data
@@ -227,13 +228,13 @@ def plot_y_by_year(
     # Plot imputed data
     for column in columns_to_predict:
         _control_vs_target_plot_imputed(
-            target_id, target_data_imputed, incident_df, control_dfs_imputed, column, diff_results_dir, k, distance_metric
+            target_id, target_data_imputed, incident_df, control_dfs_imputed, column, diff_results_dir, k, distance_metric, placebo
         )
         _avg_controls_plot_imputed(
-            target_id, target_data_imputed, incident_df, all_control_data_imputed, column, diff_results_dir, k, distance_metric
+            target_id, target_data_imputed, incident_df, all_control_data_imputed, column, diff_results_dir, k, distance_metric, placebo
         )
 
-def _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric):
+def _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric, placebo):
     colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
     plt.figure(figsize=(12, 8))
 
@@ -273,11 +274,13 @@ def _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, co
     col_results_dir = Path(diff_results_dir) / column
     col_results_dir.mkdir(parents=True, exist_ok=True)
     plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}.png'
+    if placebo:
+        plot_filename = f'placebo_plot_{target_id}_distance_{distance_metric}_k{k}.png'
     plt.tight_layout()
     plt.savefig(col_results_dir / plot_filename)
     plt.close()
 
-def _avg_controls_plot(target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric):
+def _avg_controls_plot(target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric, placebo):
     plt.figure(figsize=(12, 8))
     # Plot the target authority
     plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
@@ -317,12 +320,14 @@ def _avg_controls_plot(target_id, target_data, incident_df, all_control_data, co
     col_results_dir = Path(diff_results_dir) / column
     col_results_dir.mkdir(parents=True, exist_ok=True)
     plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}.png'
+    if placebo:
+        plot_filename = f'placebo_plot_{target_id}_avg_control_distance_{distance_metric}_k{k}.png'
     plt.tight_layout()
     plt.savefig(col_results_dir / plot_filename)
     plt.close()
 
 def _control_vs_target_plot_imputed(
-    target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric
+    target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric, placebo
     ):
     colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', 
         '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
@@ -387,11 +392,13 @@ def _control_vs_target_plot_imputed(
     col_results_dir = Path(diff_results_dir) / column
     col_results_dir.mkdir(parents=True, exist_ok=True)
     plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}_imputed.png'
+    if placebo:
+        plot_filename = f'placebo_plot_{target_id}_distance_{distance_metric}_k{k}_imputed.png'
     plt.savefig(col_results_dir / plot_filename)
     plt.close()
 
 def _avg_controls_plot_imputed(
-    target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric
+    target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric, placebo
     ):
     plt.figure(figsize=(12, 8))
     is_imputed_col = 'is_imputed_' + column
@@ -457,6 +464,8 @@ def _avg_controls_plot_imputed(
     col_results_dir = Path(diff_results_dir) / column
     col_results_dir.mkdir(parents=True, exist_ok=True)
     plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}_imputed.png'
+    if placebo:
+        plot_filename = f'placebo_plot_{target_id}_avg_control_distance_{distance_metric}_k{k}_imputed.png'
     plt.savefig(col_results_dir / plot_filename)
     plt.close()
 
@@ -468,7 +477,8 @@ def plot_y_by_year_for_all(
     k: int,
     distance_metric: str,
     results_dir: str,
-    diff_results_dir: str
+    diff_results_dir: str,
+    placebo: bool
     ):
     """
     Plot the values of the columns to predict for all target authorities and their neighbors over the years.
@@ -483,6 +493,11 @@ def plot_y_by_year_for_all(
         results_dir (str): Directory containing the KNN results.
         diff_results_dir (str): Directory to save the plot results.
     """
+    if placebo:
+        infer_df = get_placebo_infer_df(imputed=False, src_path=src_path)
+        imputed_df = get_placebo_infer_df(imputed=True, src_path=src_path)
+        treatment_ids = placebo_ids
+    
     knn_results_path = Path(results_dir) / "knn" / f'knn_results_k={k}_{distance_metric}_placebo={placebo}.csv'
     knn_results = pd.read_csv(knn_results_path)
 
@@ -492,7 +507,7 @@ def plot_y_by_year_for_all(
         ]['control_id'].to_list()
         assert len(control_auth_ids) == k
         plot_y_by_year(
-            infer_df, imputed_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric
+            infer_df, imputed_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric, placebo
         )
 
 def calc_simple_did(
@@ -681,8 +696,15 @@ def compute_clustered_did(data: pd.DataFrame)->Tuple[float, float, float]:
     Returns:
         Tuple[float, float, float]: The DiD estimate, standard error, and p value.
     """
+    # Fit the model
     model = ols('Y ~ IsTreatment * IsPost', data=data).fit()
-    clustered_model = model.get_robustcov_results(cov_type='cluster', groups=data['Unit'])
+
+    # Align the groups variable with the model's data
+    idx = model.model.data.row_labels
+    groups = data.loc[idx, 'Unit']
+
+    # Get clustered standard errors
+    clustered_model = model.get_robustcov_results(cov_type='cluster', groups=groups)
     
     # Convert NumPy arrays to pandas Series with index labels
     params = pd.Series(clustered_model.params, index=model.params.index)
@@ -921,11 +943,13 @@ def run_did_analysis_per_target(data: pd.DataFrame, imputed: bool):
     p_vals['OLS + FE'] = pvalue_fe
 
     # Clustered Standard Errors
-    if imputed:
-        _, _, pvalue_cluster = compute_clustered_did(data)
-        p_vals['Clustered SE'] = pvalue_cluster
-    else:
-        p_vals['Clustered SE'] = np.nan
+    _, _, pvalue_cluster = compute_clustered_did(data)
+    p_vals['Clustered SE'] = pvalue_cluster
+    # if imputed:
+    #     _, _, pvalue_cluster = compute_clustered_did(data)
+    #     p_vals['Clustered SE'] = pvalue_cluster
+    # else:
+    #     p_vals['Clustered SE'] = np.nan
     
     # Permutation test
     p_value_perm = permutation_test(data, n_treatment_units=1)
@@ -957,7 +981,7 @@ def get_data_by_target_and_incident(infer_df, target_id, incident_year, incident
     filtered_df.rename(columns={col_to_predict: 'Y', 'auth_id': 'Unit', 'year': 'time'}, inplace=True)
     return filtered_df
 
-def validate_enough_data_for_inference(df: pd.DataFrame, incident_year: int, col_to_predict: str, years_range: int = 1, n_years_before: int = 3, n_years_after: int = 1):
+def validate_enough_data_for_inference(df: pd.DataFrame, incident_year: int, years_range: int = 1, n_years_before: int = 3, n_years_after: int = 1):
     """
     validate enough values for col_to_predict
 
@@ -973,17 +997,17 @@ def validate_enough_data_for_inference(df: pd.DataFrame, incident_year: int, col
         bool: True if there are enough values for inference, False otherwise.
     """
     # check that there are values for the predict column for all years in the range [incident_year-years_range, incident_year+years_range]
-    df_relevant_years = df[df.year.isin(list(range(incident_year-years_range, incident_year+years_range)))]
-    if df_relevant_years[col_to_predict].isna().any():
+    df_relevant_years = df[df['time'].isin(list(range(int(incident_year)-years_range, int(incident_year)+years_range)))]
+    if df_relevant_years['Y'].isna().any():
         return False
     
     # check that there are at least n_years_before with not null values in col_to_predict before the incident year
-    df_before = df[(df['year'] < incident_year) & (df[col_to_predict].notna())]
+    df_before = df[(df['time'] < incident_year) & (df['Y'].notna())]
     if len(df_before) < n_years_before:
         return False    
     
     # check that there are at least n_years_after values after the incident year
-    df_after = df[(df['year'] >= incident_year) & (df[col_to_predict].notna())]
+    df_after = df[(df['time'] >= incident_year) & (df['Y'].notna())]
     if len(df_after) < n_years_after:
         return False
     
@@ -1017,6 +1041,9 @@ def run_did_analysis(
         
         # iterate over targets
         for target_id in tqdm(treatment_ids):
+            # get target name
+            target_name = infer_df[infer_df['auth_id'] == target_id]['auth_name'].iloc[0]
+            
             # get control ids
             control_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
             assert len(control_ids) == k
@@ -1030,15 +1057,24 @@ def run_did_analysis(
                 # filter data
                 target_df = get_data_by_target_and_incident(infer_df, target_id, incident_year, incident_type, control_ids, col_to_predict)
                 # validate_enough_data
-                enough_data = validate_enough_data_for_inference(target_df, incident_year, col_to_predict)
+                enough_data = validate_enough_data_for_inference(target_df, incident_year)
                 if not enough_data:
-                    logger.info(f'not enough data for target {target_id} in year {incident_year}, incident_type {incident_type}')
+                    results.append(pd.DataFrame([{
+                        'target_id': target_id,
+                        'target_name': target_name,
+                        'incident_year': incident_year,
+                        'incident_type': incident_type,
+                        'column': col_to_predict,
+                        'p_vals': {},
+                        'n_rows_data': len(target_df),
+                        'n_rows_notna': target_df['Y'].notna().sum(),
+                        'enough_data': enough_data
+                    }]))
                     continue
                 
                 # run did analysis
                 p_vals = run_did_analysis_per_target(target_df, imputed)
                 # append results
-                target_name = infer_df[infer_df['auth_id'] == target_id]['auth_name'].iloc[0]
                 results.append(pd.DataFrame([{
                     'target_id': target_id,
                     'target_name': target_name,
@@ -1047,14 +1083,19 @@ def run_did_analysis(
                     'column': col_to_predict,
                     'p_vals': p_vals,
                     'n_rows_data': len(target_df),
-                    'n_rows_notna': target_df['Y'].notna().sum()
+                    'n_rows_notna': target_df['Y'].notna().sum(),
+                    'enough_data': enough_data
                 }]))
-                
+        
         results_df = pd.concat(results, ignore_index=True)
         # unpack p_vals dict
         results_df = pd.concat([results_df.drop(['p_vals'], axis=1), results_df['p_vals'].apply(pd.Series)], axis=1)
+        # save results
         results_df.to_csv(diff_results_dir / col_to_predict / f'did_results_placebo={placebo}_imputed={imputed}_k={k}_{distance_metric}.csv', index=False)
-
+        # log how many cases had enough data
+        n_enough_data = results_df['enough_data'].sum()
+        n_not_enough_data = len(results_df) - n_enough_data
+        logger.info(f"n cases with enough data: {n_enough_data}, n cases without enough data: {n_not_enough_data}")
 
 if __name__ == "__main__":
     # ----- Simulated Data -----
@@ -1066,8 +1107,8 @@ if __name__ == "__main__":
     src_path = Path.cwd() / 'src'
     results_dir = src_path / 'results'
     diff_results_dir = results_dir / 'diff'
-    imputed = False
-    placebo = False
+    imputed = True
+    placebo = True
     infer_df = get_infer_df(imputed)
     
     not_imputed_df=get_infer_df(imputed=False)
@@ -1082,6 +1123,7 @@ if __name__ == "__main__":
         distance_metric='cosine',
         results_dir=results_dir,
         diff_results_dir=diff_results_dir,
+        placebo=placebo
     )
     
     # run_did_analysis(

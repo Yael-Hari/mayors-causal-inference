@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data
+31,אופקים,2012,arrest,start_roads_length_km,192,70,False
+31,אופקים,2013,conviction,start_roads_length_km,192,70,False
+1031,שדרות,2009,conviction,start_roads_length_km,192,98,False
+587,סביון,2003,conviction,start_roads_length_km,264,31,False
+587,סביון,2013,indictment filed,start_roads_length_km,264,31,False
+587,סביון,2014,conviction,start_roads_length_km,264,31,False
+70,אשדוד,2010,arrest,start_roads_length_km,264,197,False
+70,אשדוד,2012,indictment filed,start_roads_length_km,264,197,False
+70,אשדוד,2014,conviction,start_roads_length_km,264,197,False
+9600,קריית ים,2009,arrest,start_roads_length_km,216,96,False
+9600,קריית ים,2013,indictment filed,start_roads_length_km,216,96,False
+9600,קריית ים,2014,conviction,start_roads_length_km,216,96,False
+7700,עפולה,2005,conviction,start_roads_length_km,168,94,False
+9200,בית שאן,2007,arrest,start_roads_length_km,192,81,False
+9200,בית שאן,2010,indictment filed,start_roads_length_km,192,81,False
+9200,בית שאן,2011,indictment filed,start_roads_length_km,192,81,False
+9200,בית שאן,2015,conviction,start_roads_length_km,192,81,False
+9700,הוד השרון,2017,arrest,start_roads_length_km,216,82,False
+9700,הוד השרון,2018,indictment filed,start_roads_length_km,216,82,False
+9700,הוד השרון,2021,conviction,start_roads_length_km,216,82,False
+8500,רמלה,2006,arrest,start_roads_length_km,240,132,False
+8500,רמלה,2006,indictment filed,start_roads_length_km,240,132,False
+8500,רמלה,2010,conviction,start_roads_length_km,240,132,False
+7800,פרדס חנה-כרכור,2016,arrest,start_roads_length_km,168,66,False
+7800,פרדס חנה-כרכור,2017,indictment filed,start_roads_length_km,168,66,False
+7800,פרדס חנה-כרכור,2019,conviction,start_roads_length_km,168,66,False
+3660,עמנואל,2016,conviction,start_roads_length_km,240,38,False
+7200,נס ציונה,2008,conviction,start_roads_length_km,192,69,False
+8700,רעננה,2013,indictment filed,start_roads_length_km,216,116,False
+8700,רעננה,2015,conviction,start_roads_length_km,216,116,False
+2800,קריית שמונה,2008,conviction,start_roads_length_km,216,99,False

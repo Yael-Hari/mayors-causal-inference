@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data,OLS,OLS + FE,Clustered SE,Permutation
+1034,קריית מלאכי,2012.0,arrest,complete_water_pipes_km,264,264,True,0.754105270418127,0.7471301487998563,0.3744255418942042,0.75
+1034,קריית מלאכי,2013.0,conviction,complete_water_pipes_km,264,264,True,0.37652246393717215,0.36270688238759374,0.06355663678734151,0.44
+2630,קריית גת,2009.0,conviction,complete_water_pipes_km,264,264,True,0.2998456474054413,0.28272621217339927,0.008712151897628301,0.39
+2650,רמת השרון,2003.0,conviction,complete_water_pipes_km,264,264,True,0.06373571802179379,0.009475172811578387,1.287945936893195e-15,0.12
+2650,רמת השרון,2014.0,conviction,complete_water_pipes_km,264,264,True,0.0029057433247452868,2.7732683824525184e-05,1.6295637252821057e-14,0.07
+2650,רמת השרון,2013.0,indictment filed,complete_water_pipes_km,264,264,True,0.000890562981013341,2.755997470115913e-06,2.4922247509280294e-15,0.05
+3000,ירושלים,2010.0,arrest,complete_water_pipes_km,264,264,True,0.6975485652088942,0.8326849521685417,0.037422148674268,0.73
+3000,ירושלים,2014.0,conviction,complete_water_pipes_km,264,264,True,0.7618543992395288,0.4487822217025331,0.33796592442720286,0.66
+3000,ירושלים,2012.0,indictment filed,complete_water_pipes_km,264,264,True,0.808435846411647,0.45092676873211757,0.5165103519528246,0.59
+6200,בת ים,2009.0,arrest,complete_water_pipes_km,264,240,False,,,,
+6200,בת ים,2014.0,conviction,complete_water_pipes_km,264,240,False,,,,
+6200,בת ים,2013.0,indictment filed,complete_water_pipes_km,264,240,False,,,,
+6500,חדרה,2005.0,conviction,complete_water_pipes_km,264,240,False,,,,
+6700,טבריה,2007.0,arrest,complete_water_pipes_km,264,264,True,0.38448348058344484,0.3719244547931546,0.07870645159914373,0.48
+6700,טבריה,2015.0,conviction,complete_water_pipes_km,264,264,True,0.00027127417835783914,0.00015846836244957295,8.364146836367986e-08,0.08
+6700,טבריה,2010.0,indictment filed,complete_water_pipes_km,264,264,True,0.05694820321765847,0.04824821268571085,8.954144632881811e-07,0.1
+6700,טבריה,2011.0,indictment filed,complete_water_pipes_km,264,264,True,0.014505136911378728,0.010972771575596462,3.595056075118188e-05,0.13
+6900,כפר סבא,2017.0,arrest,complete_water_pipes_km,264,259,True,,,,1.0
+6900,כפר סבא,2021.0,conviction,complete_water_pipes_km,264,263,True,,,,1.0
+6900,כפר סבא,2018.0,indictment filed,complete_water_pipes_km,264,260,True,,,,1.0
+7000,לוד,2006.0,arrest,complete_water_pipes_km,264,264,True,0.20617881745554573,0.16215821955368578,0.10632352034428699,0.67
+7000,לוד,2010.0,conviction,complete_water_pipes_km,264,264,True,0.05446429929648005,0.03402734155215224,0.018576974458569075,0.32
+7000,לוד,2006.0,indictment filed,complete_water_pipes_km,264,264,True,0.20617881745554573,0.16215821955368578,0.10632352034428699,0.68
+7100,אשקלון,2016.0,arrest,complete_water_pipes_km,264,240,False,,,,
+7100,אשקלון,2019.0,conviction,complete_water_pipes_km,264,240,False,,,,
+7100,אשקלון,2017.0,indictment filed,complete_water_pipes_km,264,240,False,,,,
+8000,צפת,2016.0,conviction,complete_water_pipes_km,264,216,False,,,,
+8400,רחובות,2008.0,conviction,complete_water_pipes_km,264,240,False,,,,
+8600,רמת גן,2015.0,conviction,complete_water_pipes_km,264,264,True,0.9082133203273358,0.8843484056639133,0.7516213977411718,1.0
+8600,רמת גן,2013.0,indictment filed,complete_water_pipes_km,264,264,True,0.8593290661649184,0.8230565025115664,0.6477073324324182,1.0
+9100,נהרייה,2008.0,conviction,complete_water_pipes_km,264,240,False,,,,

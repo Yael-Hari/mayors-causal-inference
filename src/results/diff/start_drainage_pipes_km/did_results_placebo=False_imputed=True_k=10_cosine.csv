@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data,OLS,OLS + FE,Clustered SE,Permutation
+1034,קריית מלאכי,2012.0,arrest,start_drainage_pipes_km,264,240,False,,,,
+1034,קריית מלאכי,2013.0,conviction,start_drainage_pipes_km,264,240,False,,,,
+2630,קריית גת,2009.0,conviction,start_drainage_pipes_km,264,264,True,2.866616685822381e-13,4.407973087952278e-14,1.0313407387906329e-07,0.04
+2650,רמת השרון,2003.0,conviction,start_drainage_pipes_km,264,168,False,,,,
+2650,רמת השרון,2014.0,conviction,start_drainage_pipes_km,264,168,False,,,,
+2650,רמת השרון,2013.0,indictment filed,start_drainage_pipes_km,264,168,False,,,,
+3000,ירושלים,2010.0,arrest,start_drainage_pipes_km,264,264,True,0.07858756002612989,0.04360600474729131,0.006355872399202196,0.37
+3000,ירושלים,2014.0,conviction,start_drainage_pipes_km,264,264,True,0.2299538591800394,0.17145623276447164,0.014883872470881715,0.29
+3000,ירושלים,2012.0,indictment filed,start_drainage_pipes_km,264,264,True,0.03958363962345615,0.021105177925031676,0.0019715843911200077,0.37
+6200,בת ים,2009.0,arrest,start_drainage_pipes_km,264,240,False,,,,
+6200,בת ים,2014.0,conviction,start_drainage_pipes_km,264,240,False,,,,
+6200,בת ים,2013.0,indictment filed,start_drainage_pipes_km,264,240,False,,,,
+6500,חדרה,2005.0,conviction,start_drainage_pipes_km,264,233,False,,,,
+6700,טבריה,2007.0,arrest,start_drainage_pipes_km,264,249,True,,,,1.0
+6700,טבריה,2015.0,conviction,start_drainage_pipes_km,264,257,True,,,,1.0
+6700,טבריה,2010.0,indictment filed,start_drainage_pipes_km,264,252,True,,,,1.0
+6700,טבריה,2011.0,indictment filed,start_drainage_pipes_km,264,253,True,,,,1.0
+6900,כפר סבא,2017.0,arrest,start_drainage_pipes_km,264,264,True,0.463370633453387,0.23159908804400028,0.16941240725464765,0.52
+6900,כפר סבא,2021.0,conviction,start_drainage_pipes_km,264,263,True,,,,1.0
+6900,כפר סבא,2018.0,indictment filed,start_drainage_pipes_km,264,264,True,0.4322018054432938,0.2003454156657853,0.1981446011637138,0.32
+7000,לוד,2006.0,arrest,start_drainage_pipes_km,264,264,True,0.6558334784390187,0.6309731286393163,0.43089358909906816,0.78
+7000,לוד,2010.0,conviction,start_drainage_pipes_km,264,264,True,0.891786975329502,0.8833729545449949,0.8677072858779037,0.91
+7000,לוד,2006.0,indictment filed,start_drainage_pipes_km,264,264,True,0.6558334784390187,0.6309731286393163,0.43089358909906816,0.77
+7100,אשקלון,2016.0,arrest,start_drainage_pipes_km,264,240,False,,,,
+7100,אשקלון,2019.0,conviction,start_drainage_pipes_km,264,240,False,,,,
+7100,אשקלון,2017.0,indictment filed,start_drainage_pipes_km,264,240,False,,,,
+8000,צפת,2016.0,conviction,start_drainage_pipes_km,264,192,False,,,,
+8400,רחובות,2008.0,conviction,start_drainage_pipes_km,264,240,False,,,,
+8600,רמת גן,2015.0,conviction,start_drainage_pipes_km,264,264,True,0.7010346125407942,0.675263027024552,0.538660967557621,0.63
+8600,רמת גן,2013.0,indictment filed,start_drainage_pipes_km,264,264,True,0.4850744926056958,0.4460845529883616,0.32144704903409277,0.69
+9100,נהרייה,2008.0,conviction,start_drainage_pipes_km,264,202,False,,,,

@@ -1,32 +1,32 @@
-target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,OLS,OLS + FE,Clustered SE,Permutation
-1034,קריית מלאכי,2012.0,arrest,special_budget_expenditures,264,225,0.22387629986730448,0.07996081447448035,,0.79
-1034,קריית מלאכי,2013.0,conviction,special_budget_expenditures,264,225,0.2259566722407563,0.0861738482882925,,0.74
-2630,קריית גת,2009.0,conviction,special_budget_expenditures,264,228,0.003000920926514617,2.4526088680625843e-05,,0.12
-2650,רמת השרון,2003.0,conviction,special_budget_expenditures,264,210,0.09938489895416414,0.012378754937952395,,0.08
-2650,רמת השרון,2013.0,indictment filed,special_budget_expenditures,264,210,0.49926474874585614,0.2699805293016917,,0.17
-2650,רמת השרון,2014.0,conviction,special_budget_expenditures,264,210,0.4850199437314655,0.24769127313713052,,0.3
-3000,ירושלים,2010.0,arrest,special_budget_expenditures,264,230,1.7560804649198163e-09,1.939746139568244e-15,,0.09
-3000,ירושלים,2012.0,indictment filed,special_budget_expenditures,264,230,2.9645177775558042e-12,2.2913045602004447e-20,,0.13
-3000,ירושלים,2014.0,conviction,special_budget_expenditures,264,230,4.614711984921131e-14,3.0262659944288492e-24,,0.1
-6200,בת ים,2009.0,arrest,special_budget_expenditures,264,227,0.46357354546073737,0.35217446202546243,,0.74
-6200,בת ים,2013.0,indictment filed,special_budget_expenditures,264,227,0.8012524032594461,0.6017687131351686,,1.0
-6200,בת ים,2014.0,conviction,special_budget_expenditures,264,227,0.8919408512946261,0.737527890760854,,1.0
-6500,חדרה,2005.0,conviction,special_budget_expenditures,264,225,0.0067202436876407975,0.00028384296668773666,,0.19
-6700,טבריה,2007.0,arrest,special_budget_expenditures,264,225,0.5135947720525806,0.29454111512449455,,0.82
-6700,טבריה,2010.0,indictment filed,special_budget_expenditures,264,225,0.31910551517772834,0.1297646143768387,,0.64
-6700,טבריה,2011.0,indictment filed,special_budget_expenditures,264,225,0.2783391280320172,0.10634710282965375,,0.64
-6700,טבריה,2015.0,conviction,special_budget_expenditures,264,225,0.01242154578781558,0.000742023189344197,,0.66
-6900,כפר סבא,2017.0,arrest,special_budget_expenditures,264,223,0.10327522996081394,0.0007732842852974903,,0.25
-6900,כפר סבא,2018.0,indictment filed,special_budget_expenditures,264,223,0.11017110596369323,0.0010302070784812306,,0.3
-6900,כפר סבא,2021.0,conviction,special_budget_expenditures,264,223,0.2107770059426367,0.012083985291980397,,0.25
-7000,לוד,2006.0,arrest,special_budget_expenditures,264,228,0.23530129558872745,0.09725331454370993,,0.44
-7000,לוד,2006.0,indictment filed,special_budget_expenditures,264,228,0.23530129558872745,0.09725331454370993,,0.37
-7000,לוד,2010.0,conviction,special_budget_expenditures,264,228,0.2205828903246592,0.10419934409010381,,0.36
-7100,אשקלון,2016.0,arrest,special_budget_expenditures,264,229,0.0007840378292590977,1.5921386178034143e-05,,0.24
-7100,אשקלון,2017.0,indictment filed,special_budget_expenditures,264,229,0.0003434594924426176,3.3681206063400604e-06,,0.14
-7100,אשקלון,2019.0,conviction,special_budget_expenditures,264,229,0.0009490612622117502,3.0020601340821444e-06,,0.09
-8000,צפת,2016.0,conviction,special_budget_expenditures,264,211,0.4025926376592157,0.16728336547269387,,0.9
-8400,רחובות,2008.0,conviction,special_budget_expenditures,264,221,0.003992307811932116,5.642560041366738e-06,,0.07
-8600,רמת גן,2013.0,indictment filed,special_budget_expenditures,264,229,0.0013401452708200884,3.9413902168963686e-07,,0.09
-8600,רמת גן,2015.0,conviction,special_budget_expenditures,264,229,0.0007290084865162851,1.0088197802094823e-07,,0.07
-9100,נהרייה,2008.0,conviction,special_budget_expenditures,264,225,0.5875001523971171,0.40089216218647594,,0.55
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data,OLS,OLS + FE,Clustered SE,Permutation
+1034,קריית מלאכי,2012.0,arrest,special_budget_expenditures,264,225,True,0.22387629986730484,0.079960814474481,0.07474705873925774,0.68
+1034,קריית מלאכי,2013.0,conviction,special_budget_expenditures,264,225,True,0.22595667224075633,0.0861738482882935,0.08690309592603193,0.75
+2630,קריית גת,2009.0,conviction,special_budget_expenditures,264,228,False,,,,
+2650,רמת השרון,2003.0,conviction,special_budget_expenditures,264,210,False,,,,
+2650,רמת השרון,2013.0,indictment filed,special_budget_expenditures,264,210,True,0.499264748745858,0.26998052930168986,0.0008590655106092608,0.17
+2650,רמת השרון,2014.0,conviction,special_budget_expenditures,264,210,True,0.48501994373146573,0.24769127313713007,0.003462317798228989,0.48
+3000,ירושלים,2010.0,arrest,special_budget_expenditures,264,230,True,1.7560804649199059e-09,2.2226240836634514e-15,1.21667354728982e-07,0.11
+3000,ירושלים,2012.0,indictment filed,special_budget_expenditures,264,230,True,2.9645177775558797e-12,2.384305813575318e-20,9.363017402356145e-08,0.13
+3000,ירושלים,2014.0,conviction,special_budget_expenditures,264,230,True,4.614711984921364e-14,3.162062123037962e-24,7.468620336521245e-08,0.09
+6200,בת ים,2009.0,arrest,special_budget_expenditures,264,227,False,,,,
+6200,בת ים,2013.0,indictment filed,special_budget_expenditures,264,227,True,0.8012524032594439,0.6017687131351692,0.580340417293634,1.0
+6200,בת ים,2014.0,conviction,special_budget_expenditures,264,227,True,0.8919408512946261,0.7375278907608551,0.7748663837970101,1.0
+6500,חדרה,2005.0,conviction,special_budget_expenditures,264,225,True,0.00672024368763982,0.0002838429666877234,0.00015645270260701742,0.14
+6700,טבריה,2007.0,arrest,special_budget_expenditures,264,225,False,,,,
+6700,טבריה,2010.0,indictment filed,special_budget_expenditures,264,225,True,0.3191055151777285,0.12976461437683998,0.09632942607013986,0.63
+6700,טבריה,2011.0,indictment filed,special_budget_expenditures,264,225,True,0.2783391280320187,0.10634710282965461,0.0978003465231214,0.63
+6700,טבריה,2015.0,conviction,special_budget_expenditures,264,225,True,0.012421545787815569,0.0007420231893441902,0.010772065896711227,0.51
+6900,כפר סבא,2017.0,arrest,special_budget_expenditures,264,223,True,0.10327522996081379,0.0007732842852974902,0.003334965951938419,0.23
+6900,כפר סבא,2018.0,indictment filed,special_budget_expenditures,264,223,True,0.11017110596369276,0.0010302070784812079,0.002009200302641746,0.29
+6900,כפר סבא,2021.0,conviction,special_budget_expenditures,264,223,True,0.21077700594263676,0.01208398529198043,0.003141253397285574,0.19
+7000,לוד,2006.0,arrest,special_budget_expenditures,264,228,False,,,,
+7000,לוד,2006.0,indictment filed,special_budget_expenditures,264,228,False,,,,
+7000,לוד,2010.0,conviction,special_budget_expenditures,264,228,True,0.22058289032465914,0.10419934409010263,0.01473226346164585,0.29
+7100,אשקלון,2016.0,arrest,special_budget_expenditures,264,229,True,0.0007840378292590902,1.5921386178033937e-05,9.820472858705172e-05,0.13
+7100,אשקלון,2017.0,indictment filed,special_budget_expenditures,264,229,True,0.00034345949244261756,3.368120606340203e-06,5.193837390614195e-05,0.16
+7100,אשקלון,2019.0,conviction,special_budget_expenditures,264,229,True,0.0009490612622117549,3.0020601340820894e-06,5.094336556191e-06,0.08
+8000,צפת,2016.0,conviction,special_budget_expenditures,264,211,False,,,,
+8400,רחובות,2008.0,conviction,special_budget_expenditures,264,221,False,,,,
+8600,רמת גן,2013.0,indictment filed,special_budget_expenditures,264,229,True,0.0013401452708200858,3.9413902168966805e-07,1.1697327569471995e-05,0.14
+8600,רמת גן,2015.0,conviction,special_budget_expenditures,264,229,True,0.0007290084865162956,1.0088197802095104e-07,1.7681131861154803e-05,0.13
+9100,נהרייה,2008.0,conviction,special_budget_expenditures,264,225,False,,,,

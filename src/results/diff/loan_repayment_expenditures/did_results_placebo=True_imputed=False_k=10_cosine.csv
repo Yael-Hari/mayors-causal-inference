@@ -1,0 +1,32 @@
+target_id,target_name,incident_year,incident_type,column,n_rows_data,n_rows_notna,enough_data,OLS,OLS + FE,Clustered SE,Permutation
+31,אופקים,2012,arrest,loan_repayment_expenditures,192,156,True,0.5336370471432473,0.33305383363280283,0.17683224009615683,0.57
+31,אופקים,2013,conviction,loan_repayment_expenditures,192,156,True,0.5158927372850274,0.31825512600976874,0.12713434723838626,0.3
+1031,שדרות,2009,conviction,loan_repayment_expenditures,192,157,False,,,,
+587,סביון,2003,conviction,loan_repayment_expenditures,264,178,False,,,,
+587,סביון,2013,indictment filed,loan_repayment_expenditures,264,178,False,,,,
+587,סביון,2014,conviction,loan_repayment_expenditures,264,178,False,,,,
+70,אשדוד,2010,arrest,loan_repayment_expenditures,264,220,True,0.309923202599427,0.08473250124528704,0.0015535294300754543,0.17
+70,אשדוד,2012,indictment filed,loan_repayment_expenditures,264,220,True,0.3096315222208146,0.0845485827779789,0.0009751099920358927,0.25
+70,אשדוד,2014,conviction,loan_repayment_expenditures,264,220,True,0.27592325631797443,0.06430054282435355,2.609010139217207e-05,0.06
+9600,קריית ים,2009,arrest,loan_repayment_expenditures,216,182,False,,,,
+9600,קריית ים,2013,indictment filed,loan_repayment_expenditures,216,182,True,0.9030821891027547,0.9452956456275841,0.8044999036855648,1.0
+9600,קריית ים,2014,conviction,loan_repayment_expenditures,216,182,True,0.23714451930205407,0.11044490057204588,0.029040179269298076,0.58
+7700,עפולה,2005,conviction,loan_repayment_expenditures,168,139,True,0.6756844642706212,0.7177507596933027,0.4252694705542319,0.7
+9200,בית שאן,2007,arrest,loan_repayment_expenditures,192,157,False,,,,
+9200,בית שאן,2010,indictment filed,loan_repayment_expenditures,192,157,True,0.043032907440380457,6.098578867487506e-05,0.00449261341509973,0.38
+9200,בית שאן,2011,indictment filed,loan_repayment_expenditures,192,157,True,0.041642758580483843,6.30711914135786e-05,0.0038790014855381565,0.36
+9200,בית שאן,2015,conviction,loan_repayment_expenditures,192,157,True,0.03508167309866086,4.696487930448792e-05,0.0011152488568318165,0.29
+9700,הוד השרון,2017,arrest,loan_repayment_expenditures,216,175,True,0.3972930671423598,0.11093236206597007,0.09604567752200673,0.37
+9700,הוד השרון,2018,indictment filed,loan_repayment_expenditures,216,175,True,0.3859373976099293,0.0933445809738422,0.08560723294138078,0.38
+9700,הוד השרון,2021,conviction,loan_repayment_expenditures,216,175,True,0.8236266254036494,0.5657210830938194,0.46212133763294805,0.7
+8500,רמלה,2006,arrest,loan_repayment_expenditures,240,198,False,,,,
+8500,רמלה,2006,indictment filed,loan_repayment_expenditures,240,198,False,,,,
+8500,רמלה,2010,conviction,loan_repayment_expenditures,240,198,True,0.15763164971200502,0.07675293331380391,0.014474938600880321,0.51
+7800,פרדס חנה-כרכור,2016,arrest,loan_repayment_expenditures,168,136,True,0.6432372024969548,0.4194641183032868,0.2990529568638245,0.92
+7800,פרדס חנה-כרכור,2017,indictment filed,loan_repayment_expenditures,168,136,True,0.8338538677079076,0.723705347226365,0.7371681684511083,0.85
+7800,פרדס חנה-כרכור,2019,conviction,loan_repayment_expenditures,168,136,True,0.6461463767092639,0.423499004156187,0.3440187938457651,0.85
+3660,עמנואל,2016,conviction,loan_repayment_expenditures,240,197,True,0.7796919528083157,0.6922272374164604,0.5620672162032505,0.9
+7200,נס ציונה,2008,conviction,loan_repayment_expenditures,192,154,False,,,,
+8700,רעננה,2013,indictment filed,loan_repayment_expenditures,216,178,True,0.15426882361498934,0.039850668267560486,0.0022057828239077253,0.24
+8700,רעננה,2015,conviction,loan_repayment_expenditures,216,178,True,0.8310216926846743,0.8214635466897111,0.6311454637172338,0.78
+2800,קריית שמונה,2008,conviction,loan_repayment_expenditures,216,176,False,,,,

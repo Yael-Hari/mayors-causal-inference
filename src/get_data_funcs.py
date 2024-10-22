@@ -7,7 +7,7 @@ def get_infer_df(imputed: bool):
     Load the inference DataFrame and return it.
     
     Parameters:
-    imupted (bool): Whether to load the imputed inference DataFrame.
+    imputed (bool): Whether to load the imputed inference DataFrame.
     
     Returns:
     pd.DataFrame: The inference DataFrame.
@@ -22,10 +22,10 @@ def get_infer_df(imputed: bool):
     infer_df = infer_df.merge(id_name_df, on='auth_id', how='left')
     return infer_df
 
-def get_placebo_infer_df(imupted: bool, src_path):
+def get_placebo_infer_df(imputed: bool, src_path):
     results_dir_knn = src_path / 'results' / 'knn'
     placebo_targets_df = pd.read_csv(results_dir_knn / 'placebo_targets.csv')
-    infer_df = get_infer_df(imupted=imupted)
+    infer_df = get_infer_df(imputed=imputed)
     new_infer_df = create_new_df_by_placebo_ids(infer_df, placebo_targets_df, treatment_ids)
     return new_infer_df
 
@@ -34,7 +34,7 @@ def create_new_df_by_placebo_ids(infer_df, placebo_targets_df, treatment_ids)->p
     Create a placebo DataFrame by replacing the treatment incidents with placebo incidents.
 
     Args:
-        imupted (bool): Whether to load the imputed inference DataFrame.
+        imputed (bool): Whether to load the imputed inference DataFrame.
 
     Returns:
         pd.DataFrame: The new Inference DataFrame with placebo incidents.
@@ -58,7 +58,7 @@ def create_new_df_by_placebo_ids(infer_df, placebo_targets_df, treatment_ids)->p
             new_placebo_target_incidents['incident_type'] = incident_type
             infer_df = pd.concat([infer_df, new_placebo_target_incidents])
             
-    infer_df['incident_year'] = infer_df['incident_year'].astype("int64")
+    infer_df['incident_year'] = infer_df['incident_year'].astype("Int64")
     infer_df.reset_index(drop=True, inplace=True)
     return infer_df
     
