@@ -139,7 +139,35 @@ def plot_simple_did(
         plt.close()
 
         print(f"Plot saved as {plot_filename}")
-        
+
+def add_is_imputed_columns(imputed_df: pd.DataFrame, infer_df: pd.DataFrame, columns_to_predict: List[str]) -> pd.DataFrame:
+    """
+    Adds 'is_imputed' columns to the imputed DataFrame by comparing with the original infer DataFrame.
+
+    Args:
+        imputed_df (pd.DataFrame): DataFrame with imputed values.
+        infer_df (pd.DataFrame): Original DataFrame with missing values.
+        columns_to_predict (List[str]): List of columns to predict and plot.
+
+    Returns:
+        pd.DataFrame: The imputed DataFrame with additional 'is_imputed' columns.
+    """
+    # Merge imputed_df and infer_df on 'auth_id' and 'year'
+    merged_df = imputed_df.merge(
+        infer_df[['auth_id', 'year'] + columns_to_predict], 
+        on=['auth_id', 'year'], 
+        how='left', 
+        suffixes=('', '_infer')
+    )
+
+    # Create 'is_imputed' columns for each column to predict
+    for column in columns_to_predict:
+        is_imputed_col = 'is_imputed_' + column
+        # Data is imputed where data in infer_df is NaN
+        merged_df[is_imputed_col] = merged_df[column + '_infer'].isna()
+
+    return merged_df
+
 def plot_y_by_year(
     infer_df: pd.DataFrame, 
     target_id: str, 
@@ -148,6 +176,7 @@ def plot_y_by_year(
     diff_results_dir: str,
     k: int, 
     distance_metric: str,
+    imputed_df: pd.DataFrame = None
     ):
     """
     Plot the values of the columns to predict for the target authority and its neighbors over the years.
@@ -169,92 +198,96 @@ def plot_y_by_year(
     all_control_data = infer_df[infer_df['auth_id'].isin(control_auth_ids)]
     control_dfs = [infer_df[infer_df['auth_id'] == auth_id] for auth_id in control_auth_ids]
     
-    # Define a list of colors excluding green
-    colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
-    
     # Plot for each column to predict
     for column in columns_to_predict:
-        plt.figure(figsize=(12, 8))
+        _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric)
+        _avg_controls_plot(target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric)
 
-        # Plot the target authority
-        plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
+def _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric):
+    colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
+    plt.figure(figsize=(12, 8))
 
-        # Plot each control authority in a different color
-        for i, control_df in enumerate(control_dfs):
-            color = colors[i % len(colors)]  # Cycle through colors if there are more control authorities than colors
-            plt.plot(control_df['year'], control_df[column], label=control_df['auth_name'].iloc[0], color=color)
+    # Plot the target authority
+    plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
 
-        # Add vertical lines and annotations for each incident_year and incident_type combination
-        for _, row in incident_df.iterrows():
-            incident_year = row['incident_year']
-            incident_type = row['incident_type']
-            
-            plt.axvline(x=incident_year, color='grey', linestyle='--')
-            plt.text(
-                incident_year, 
-                plt.ylim()[1], 
-                incident_type,
-                rotation=90, 
-                verticalalignment='top',
-                fontsize=10,
-                color='black'
-            )
+    # Plot each control authority in a different color
+    for i, control_df in enumerate(control_dfs):
+        color = colors[i % len(colors)]  # Cycle through colors if there are more control authorities than colors
+        plt.plot(control_df['year'], control_df[column], label=control_df['auth_name'].iloc[0], color=color)
+
+    # Add vertical lines and annotations for each incident_year and incident_type combination
+    for _, row in incident_df.iterrows():
+        incident_year = row['incident_year']
+        incident_type = row['incident_type']
         
-        # Add title, subtitle, labels, and legend
-        target_name = target_data['auth_name'].iloc[0]
-        plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
-        plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
-        plt.xlabel('Year', fontsize=14)
-        plt.ylabel(column, fontsize=14)
-        plt.legend(title='Authority Name', loc='upper left')
+        plt.axvline(x=incident_year, color='grey', linestyle='--')
+        plt.text(
+            incident_year, 
+            plt.ylim()[1], 
+            incident_type,
+            rotation=90, 
+            verticalalignment='top',
+            fontsize=10,
+            color='black'
+        )
+    
+    # Add title, subtitle, labels, and legend
+    target_name = target_data['auth_name'].iloc[0]
+    plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
+    plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+    plt.xlabel('Year', fontsize=14)
+    plt.ylabel(column, fontsize=14)
+    plt.legend(title='Authority Name', loc='upper left')
+    
+    # Save the plot
+    # make dir if not exists
+    col_results_dir = Path(diff_results_dir/column)
+    col_results_dir.mkdir(parents=True, exist_ok=True)
+    plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}.png'
+    plt.tight_layout()
+    plt.savefig(col_results_dir / plot_filename)
+    plt.close()
         
-        # Save the plot
-        # make dir if not exists
-        col_results_dir = Path(diff_results_dir/column)
-        col_results_dir.mkdir(parents=True, exist_ok=True)
-        plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}.png'
-        plt.tight_layout()
-        plt.savefig(col_results_dir / plot_filename)
-        plt.close()
+def _avg_controls_plot(target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric):
+    ## Plot the avg controls against the target
+    plt.figure(figsize=(12, 8))
+    plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
+    avg_control_data = all_control_data.groupby('year')[column].mean().reset_index()
+    plt.plot(avg_control_data['year'], avg_control_data[column], label='Avg Control', color='grey', linestyle='--', linewidth=3)
+    
+    # Add vertical lines and annotations for each incident_year and incident_type combination
+    for _, row in incident_df.iterrows():
+        incident_year = row['incident_year']
+        incident_type = row['incident_type']
         
-        ## Plot the avg controls against the target
-        plt.figure(figsize=(12, 8))
-        plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
-        avg_control_data = all_control_data.groupby('year')[column].mean().reset_index()
-        plt.plot(avg_control_data['year'], avg_control_data[column], label='Avg Control', color='grey', linestyle='--', linewidth=3)
-        
-        # Add vertical lines and annotations for each incident_year and incident_type combination
-        for _, row in incident_df.iterrows():
-            incident_year = row['incident_year']
-            incident_type = row['incident_type']
-            
-            plt.axvline(x=incident_year, color='grey', linestyle='--')
-            plt.text(
-                incident_year, 
-                plt.ylim()[1], 
-                incident_type,
-                rotation=90, 
-                verticalalignment='top',
-                fontsize=10,
-                color='black'
-            )
-        
-        # Add title, subtitle, labels, and legend
-        target_name = target_data['auth_name'].iloc[0]
-        plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
-        plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
-        plt.xlabel('Year', fontsize=14)
-        plt.ylabel(column, fontsize=14)
-        plt.legend(title='Authority Name', loc='upper left')
-        
-        # Save the plot
-        # make dir if not exists
-        col_results_dir = Path(diff_results_dir/column)
-        col_results_dir.mkdir(parents=True, exist_ok=True)
-        plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}.png'
-        plt.tight_layout()
-        plt.savefig(col_results_dir / plot_filename)
-        plt.close()
+        plt.axvline(x=incident_year, color='grey', linestyle='--')
+        plt.text(
+            incident_year, 
+            plt.ylim()[1], 
+            incident_type,
+            rotation=90, 
+            verticalalignment='top',
+            fontsize=10,
+            color='black'
+        )
+    
+    # Add title, subtitle, labels, and legend
+    target_name = target_data['auth_name'].iloc[0]
+    plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
+    plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+    plt.xlabel('Year', fontsize=14)
+    plt.ylabel(column, fontsize=14)
+    plt.legend(title='Authority Name', loc='upper left')
+    
+    # Save the plot
+    # make dir if not exists
+    col_results_dir = Path(diff_results_dir/column)
+    col_results_dir.mkdir(parents=True, exist_ok=True)
+    plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}.png'
+    plt.tight_layout()
+    plt.savefig(col_results_dir / plot_filename)
+    plt.close()
+    
     
 def plot_y_by_year_for_all(    
     infer_df: pd.DataFrame, 
@@ -264,6 +297,7 @@ def plot_y_by_year_for_all(
     distance_metric: str,
     results_dir: str,
     diff_results_dir: str,
+    imputed_df: pd.DataFrame = None
     ):
     """
     Plot the values of the columns to predict for the target authority and its neighbors over the years.
@@ -285,7 +319,7 @@ def plot_y_by_year_for_all(
     for target_id in tqdm(treatment_ids):
         control_auth_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
         assert len(control_auth_ids) == k
-        plot_y_by_year(infer_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric)
+        plot_y_by_year(infer_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric, imputed_df)
 
 def calc_simple_did(
     infer_df: pd.DataFrame, 
@@ -862,15 +896,16 @@ if __name__ == "__main__":
     placebo = False
     infer_df = get_infer_df(imputed)
     
-    # plot_y_by_year_for_all(        
-    #     infer_df,
-    #     columns_to_predict=columns_to_predict, 
-    #     treatment_ids=treatment_ids,
-    #     k=10,
-    #     distance_metric='cosine',
-    #     results_dir=results_dir,
-    #     diff_results_dir=diff_results_dir
-    # )
+    plot_y_by_year_for_all(        
+        infer_df=get_infer_df(imputed=False),
+        columns_to_predict=columns_to_predict, 
+        treatment_ids=treatment_ids,
+        k=10,
+        distance_metric='cosine',
+        results_dir=results_dir,
+        diff_results_dir=diff_results_dir,
+        imputed_df=get_infer_df(imputed=True)
+    )
     
     run_did_analysis(
         infer_df,
