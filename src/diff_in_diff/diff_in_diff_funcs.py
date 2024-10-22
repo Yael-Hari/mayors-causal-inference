@@ -6,7 +6,7 @@ from pathlib import Path
 from tqdm import tqdm
 from statsmodels.formula.api import ols
 from src.const import columns_to_predict, treatment_ids, placebo_ids
-from src.get_data_funcs import get_infer_df, get_placebo_incident_df
+from src.get_data_funcs import get_infer_df, get_placebo_infer_df
 from loguru import logger
 
 def calc_diff_in_diff_per_target(
@@ -749,6 +749,39 @@ def get_data_by_target_and_incident(infer_df, target_id, incident_year, incident
     filtered_df.rename(columns={col_to_predict: 'Y', 'auth_id': 'Unit', 'year': 'time'}, inplace=True)
     return filtered_df
 
+def validate_enough_data_for_inference(df: pd.DataFrame, incident_year: int, col_to_predict: str, years_range: int = 1, n_years_before: int = 3, n_years_after: int = 1):
+    """
+    validate enough values for col_to_predict
+
+    Args:
+        df (_type_): The DataFrame containing the data.
+        incident_year (_type_): The year of the incident.
+        col_to_predict (_type_): The column to predict.
+        years_range (int, optional): The range of years that require values. Defaults to 1.
+        n_years_before (int, optional): The min number of years before the incident year. Defaults to 3.
+        n_years_after (int, optional): The min number of years on / after the incident year. Defaults to 2.
+
+    Returns:
+        bool: True if there are enough values for inference, False otherwise.
+    """
+    # check that there are values for the predict column for all years in the range [incident_year-years_range, incident_year+years_range]
+    df_relevant_years = df[df.year.isin(list(range(incident_year-years_range, incident_year+years_range)))]
+    if df_relevant_years[col_to_predict].isna().any():
+        return False
+    
+    # check that there are at least n_years_before with not null values in col_to_predict before the incident year
+    df_before = df[(df['year'] < incident_year) & (df[col_to_predict].notna())]
+    if len(df_before) < n_years_before:
+        return False    
+    
+    # check that there are at least n_years_after values after the incident year
+    df_after = df[(df['year'] >= incident_year) & (df[col_to_predict].notna())]
+    if len(df_after) < n_years_after:
+        return False
+    
+    # valid df for inference
+    return True
+
 def run_did_analysis(
         infer_df: pd.DataFrame, 
         columns_to_predict: List[str], 
@@ -758,18 +791,16 @@ def run_did_analysis(
         results_dir: str, 
         diff_results_dir: bool, 
         imputed: bool, 
-        placebo: bool, 
-        placebo_ids: List[str] = None
+        placebo: bool
     ):
     # placebo params
     if placebo:
         treatment_ids = placebo_ids
-        incident_df = get_placebo_incident_df()
-    else:
-        incident_df = infer_df[['auth_id', 'incident_year', 'incident_type']].drop_duplicates()
+        infer_df = get_placebo_infer_df(imputed, src_path)
     
-    knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
+    knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}_placebo={placebo}.csv'
     knn_results = pd.read_csv(knn_results_path)
+    incident_df = infer_df[['auth_id', 'incident_year', 'incident_type']].drop_duplicates()
     
     # iterate over columns to predict
     for col_to_predict in columns_to_predict:
@@ -790,7 +821,13 @@ def run_did_analysis(
                 
                 # filter data
                 target_df = get_data_by_target_and_incident(infer_df, target_id, incident_year, incident_type, control_ids, col_to_predict)
-                # get p vals dict
+                # validate_enough_data
+                enough_data = validate_enough_data_for_inference(target_df, incident_year, col_to_predict)
+                if not enough_data:
+                    logger.info(f'not enough data for target {target_id} in year {incident_year}, incident_type {incident_type}')
+                    continue
+                
+                # run did analysis
                 p_vals = run_did_analysis_per_target(target_df, imputed)
                 # append results
                 target_name = infer_df[infer_df['auth_id'] == target_id]['auth_name'].iloc[0]
@@ -844,6 +881,5 @@ if __name__ == "__main__":
         results_dir=results_dir,
         diff_results_dir=diff_results_dir,
         imputed=imputed,
-        placebo=placebo,
-        placebo_ids=placebo_ids
+        placebo=placebo
     )
