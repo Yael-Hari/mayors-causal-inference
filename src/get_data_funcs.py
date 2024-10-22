@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 from src.const import treatment_ids
 
-def get_infer_df(imupted: bool):
+def get_infer_df(imputed: bool):
     """
     Load the inference DataFrame and return it.
     
@@ -13,7 +13,7 @@ def get_infer_df(imupted: bool):
     pd.DataFrame: The inference DataFrame.
     """
     src_path = Path.cwd() / 'src'
-    if imupted:
+    if imputed:
         infer_df = pd.read_csv(src_path / 'data/inference_features_df_imputed.csv')
     else: 
         infer_df = pd.read_csv(src_path / 'data/inference_features_df.csv')

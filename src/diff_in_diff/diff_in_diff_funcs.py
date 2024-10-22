@@ -154,9 +154,9 @@ def add_is_imputed_columns(imputed_df: pd.DataFrame, infer_df: pd.DataFrame, col
     """
     # Merge imputed_df and infer_df on 'auth_id' and 'year'
     merged_df = imputed_df.merge(
-        infer_df[['auth_id', 'year'] + columns_to_predict], 
-        on=['auth_id', 'year'], 
-        how='left', 
+        infer_df[['auth_id', 'year'] + columns_to_predict],
+        on=['auth_id', 'year'],
+        how='left',
         suffixes=('', '_infer')
     )
 
@@ -169,20 +169,21 @@ def add_is_imputed_columns(imputed_df: pd.DataFrame, infer_df: pd.DataFrame, col
     return merged_df
 
 def plot_y_by_year(
-    infer_df: pd.DataFrame, 
-    target_id: str, 
-    control_auth_ids: List[str], 
+    infer_df: pd.DataFrame,
+    imputed_df: pd.DataFrame,
+    target_id: str,
+    control_auth_ids: List[str],
     columns_to_predict: List[str],
     diff_results_dir: str,
-    k: int, 
-    distance_metric: str,
-    imputed_df: pd.DataFrame = None
+    k: int,
+    distance_metric: str
     ):
     """
     Plot the values of the columns to predict for the target authority and its neighbors over the years.
 
     Args:
-        df (pd.DataFrame): DataFrame containing data to plot.
+        infer_df (pd.DataFrame): Original DataFrame with missing values.
+        imputed_df (pd.DataFrame): DataFrame with imputed values.
         target_id (str): ID of the target authority.
         control_auth_ids (List[str]): List of control authority IDs.
         columns_to_predict (List[str]): List of columns to predict and plot.
@@ -190,18 +191,47 @@ def plot_y_by_year(
         k (int): Number of nearest neighbors.
         distance_metric (str): Distance metric used for nearest neighbors.
     """
-    
-    # Reverse the Hebrew text label for each authority in the df
+    # Reverse the Hebrew text label for each authority in the dfs
     infer_df['auth_name'] = infer_df['auth_name'].apply(lambda x: x[::-1])
+    imputed_df['auth_name'] = imputed_df['auth_name'].apply(lambda x: x[::-1])
+
+    # Sort by year
+    infer_df = infer_df.sort_values(by='year')
+    imputed_df = imputed_df.sort_values(by='year')
+
+    # Incident data
     incident_df = infer_df[infer_df['auth_id'] == target_id][['incident_year', 'incident_type']].drop_duplicates()
+
+    # Original Data
     target_data = infer_df[infer_df['auth_id'] == target_id]
     all_control_data = infer_df[infer_df['auth_id'].isin(control_auth_ids)]
     control_dfs = [infer_df[infer_df['auth_id'] == auth_id] for auth_id in control_auth_ids]
-    
-    # Plot for each column to predict
+
+    # Plot original data
     for column in columns_to_predict:
-        _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric)
-        _avg_controls_plot(target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric)
+        _control_vs_target_plot(
+            target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric
+        )
+        _avg_controls_plot(
+            target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric
+        )
+
+    # Imputed Data
+    # Add 'is_imputed' columns to imputed_df
+    imputed_df_with_flags = add_is_imputed_columns(imputed_df, infer_df, columns_to_predict)
+
+    target_data_imputed = imputed_df_with_flags[imputed_df_with_flags['auth_id'] == target_id]
+    all_control_data_imputed = imputed_df_with_flags[imputed_df_with_flags['auth_id'].isin(control_auth_ids)]
+    control_dfs_imputed = [imputed_df_with_flags[imputed_df_with_flags['auth_id'] == auth_id] for auth_id in control_auth_ids]
+
+    # Plot imputed data
+    for column in columns_to_predict:
+        _control_vs_target_plot_imputed(
+            target_id, target_data_imputed, incident_df, control_dfs_imputed, column, diff_results_dir, k, distance_metric
+        )
+        _avg_controls_plot_imputed(
+            target_id, target_data_imputed, incident_df, all_control_data_imputed, column, diff_results_dir, k, distance_metric
+        )
 
 def _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric):
     colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
@@ -210,116 +240,260 @@ def _control_vs_target_plot(target_id, target_data, incident_df, control_dfs, co
     # Plot the target authority
     plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
 
-    # Plot each control authority in a different color
+    # Plot each control authority
     for i, control_df in enumerate(control_dfs):
-        color = colors[i % len(colors)]  # Cycle through colors if there are more control authorities than colors
+        color = colors[i % len(colors)]
         plt.plot(control_df['year'], control_df[column], label=control_df['auth_name'].iloc[0], color=color)
 
-    # Add vertical lines and annotations for each incident_year and incident_type combination
+    # Add vertical lines and annotations for incidents
     for _, row in incident_df.iterrows():
         incident_year = row['incident_year']
         incident_type = row['incident_type']
-        
+
         plt.axvline(x=incident_year, color='grey', linestyle='--')
         plt.text(
-            incident_year, 
-            plt.ylim()[1], 
+            incident_year,
+            plt.ylim()[1],
             incident_type,
-            rotation=90, 
+            rotation=90,
             verticalalignment='top',
             fontsize=10,
             color='black'
         )
-    
-    # Add title, subtitle, labels, and legend
+
+    # Add title, labels, and legend
     target_name = target_data['auth_name'].iloc[0]
     plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
     plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
     plt.xlabel('Year', fontsize=14)
     plt.ylabel(column, fontsize=14)
     plt.legend(title='Authority Name', loc='upper left')
-    
+
     # Save the plot
-    # make dir if not exists
-    col_results_dir = Path(diff_results_dir/column)
+    col_results_dir = Path(diff_results_dir) / column
     col_results_dir.mkdir(parents=True, exist_ok=True)
     plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}.png'
     plt.tight_layout()
     plt.savefig(col_results_dir / plot_filename)
     plt.close()
-        
+
 def _avg_controls_plot(target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric):
-    ## Plot the avg controls against the target
     plt.figure(figsize=(12, 8))
+    # Plot the target authority
     plt.plot(target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0], color='#f5ce1c', linewidth=3)
+
+    # Calculate average control data
     avg_control_data = all_control_data.groupby('year')[column].mean().reset_index()
-    plt.plot(avg_control_data['year'], avg_control_data[column], label='Avg Control', color='grey', linestyle='--', linewidth=3)
-    
-    # Add vertical lines and annotations for each incident_year and incident_type combination
+    plt.plot(
+        avg_control_data['year'], avg_control_data[column], label='Avg Control',
+        color='grey', linestyle='--', linewidth=3
+    )
+
+    # Add vertical lines and annotations for incidents
     for _, row in incident_df.iterrows():
         incident_year = row['incident_year']
         incident_type = row['incident_type']
-        
+
         plt.axvline(x=incident_year, color='grey', linestyle='--')
         plt.text(
-            incident_year, 
-            plt.ylim()[1], 
+            incident_year,
+            plt.ylim()[1],
             incident_type,
-            rotation=90, 
+            rotation=90,
             verticalalignment='top',
             fontsize=10,
             color='black'
         )
-    
-    # Add title, subtitle, labels, and legend
+
+    # Add title, labels, and legend
     target_name = target_data['auth_name'].iloc[0]
     plt.title(f'{column} over Years | Target Auth = {target_name}', fontsize=16)
     plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
     plt.xlabel('Year', fontsize=14)
     plt.ylabel(column, fontsize=14)
     plt.legend(title='Authority Name', loc='upper left')
-    
+
     # Save the plot
-    # make dir if not exists
-    col_results_dir = Path(diff_results_dir/column)
+    col_results_dir = Path(diff_results_dir) / column
     col_results_dir.mkdir(parents=True, exist_ok=True)
     plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}.png'
     plt.tight_layout()
     plt.savefig(col_results_dir / plot_filename)
     plt.close()
-    
-    
-def plot_y_by_year_for_all(    
-    infer_df: pd.DataFrame, 
-    columns_to_predict: List[str], 
+
+def _control_vs_target_plot_imputed(
+    target_id, target_data, incident_df, control_dfs, column, diff_results_dir, k, distance_metric
+    ):
+    colors = ['#1c96f5', '#1ccef5', '#1be5c7', '#31d38e', '#3b8062', 
+        '#406455', '#7b8d86', '#63629c', '#8446af', '#cd6dcd']
+    plt.figure(figsize=(12, 8))
+
+    is_imputed_col = 'is_imputed_' + column
+
+    # Plot the target authority as a continuous line
+    plt.plot(
+        target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0],
+        color='#f5ce1c', linewidth=3
+    )
+
+    # Mark imputed data points for the target with markers
+    target_imputed = target_data[target_data[is_imputed_col]]
+    plt.scatter(
+        target_imputed['year'], target_imputed[column],
+        color='#f5ce1c', marker='o', edgecolors='black', s=50
+    )
+
+    # Plot each control authority
+    for i, control_df in enumerate(control_dfs):
+        color = colors[i % len(colors)]
+        plt.plot(
+            control_df['year'], control_df[column], label=control_df['auth_name'].iloc[0],
+            color=color
+        )
+
+        # Mark imputed data points for controls
+        control_imputed = control_df[control_df[is_imputed_col]]
+        plt.scatter(
+            control_imputed['year'], control_imputed[column],
+            color=color, marker='o', edgecolors='black', s=50
+        )
+
+    # Add vertical lines and annotations for incidents
+    for _, row in incident_df.iterrows():
+        incident_year = row['incident_year']
+        incident_type = row['incident_type']
+
+        plt.axvline(x=incident_year, color='grey', linestyle='--')
+        plt.text(
+            incident_year,
+            plt.ylim()[1],
+            incident_type,
+            rotation=90,
+            verticalalignment='top',
+            fontsize=10,
+            color='black'
+        )
+
+    # Add title, labels, and legend
+    target_name = target_data['auth_name'].iloc[0]
+    plt.title(f'{column} over Years (Imputed) | Target Auth = {target_name}', fontsize=16)
+    plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+    plt.xlabel('Year', fontsize=14)
+    plt.ylabel(column, fontsize=14)
+    plt.legend(title='Authority Name', loc='upper left')
+    plt.tight_layout()
+
+    # Save the plot
+    col_results_dir = Path(diff_results_dir) / column
+    col_results_dir.mkdir(parents=True, exist_ok=True)
+    plot_filename = f'plot_{target_id}_distance_{distance_metric}_k{k}_imputed.png'
+    plt.savefig(col_results_dir / plot_filename)
+    plt.close()
+
+def _avg_controls_plot_imputed(
+    target_id, target_data, incident_df, all_control_data, column, diff_results_dir, k, distance_metric
+    ):
+    plt.figure(figsize=(12, 8))
+    is_imputed_col = 'is_imputed_' + column
+
+    # Plot the target authority as a continuous line
+    plt.plot(
+        target_data['year'], target_data[column], label=target_data['auth_name'].iloc[0],
+        color='#f5ce1c', linewidth=3
+    )
+
+    # Mark imputed data points for the target with markers
+    target_imputed = target_data[target_data[is_imputed_col]]
+    plt.scatter(
+        target_imputed['year'], target_imputed[column],
+        color='#f5ce1c', marker='o', edgecolors='black', s=50
+    )
+
+    # Calculate average control data
+    avg_control_data = all_control_data.groupby('year')[column].mean().reset_index()
+
+    # Identify years where data is imputed in any of the controls
+    imputed_years = all_control_data[all_control_data[is_imputed_col]]['year'].unique()
+
+    # Plot average control data as a continuous line
+    plt.plot(
+        avg_control_data['year'], avg_control_data[column], label='Avg Control',
+        color='grey', linestyle='--', linewidth=3
+    )
+
+    # Mark imputed data points for average control
+    avg_imputed_data = avg_control_data[avg_control_data['year'].isin(imputed_years)]
+    plt.scatter(
+        avg_imputed_data['year'], avg_imputed_data[column],
+        color='grey', marker='o', edgecolors='black', s=50
+    )
+
+    # Add vertical lines and annotations for incidents
+    for _, row in incident_df.iterrows():
+        incident_year = row['incident_year']
+        incident_type = row['incident_type']
+
+        plt.axvline(x=incident_year, color='grey', linestyle='--')
+        plt.text(
+            incident_year,
+            plt.ylim()[1],
+            incident_type,
+            rotation=90,
+            verticalalignment='top',
+            fontsize=10,
+            color='black'
+        )
+
+    # Add title, labels, and legend
+    target_name = target_data['auth_name'].iloc[0]
+    plt.title(f'{column} over Years (Imputed) | Target Auth = {target_name}', fontsize=16)
+    plt.suptitle(f'Distance Metric: {distance_metric}, k: {k}', fontsize=10)
+    plt.xlabel('Year', fontsize=14)
+    plt.ylabel(column, fontsize=14)
+    plt.legend(title='Authority Name', loc='upper left')
+    plt.tight_layout()
+
+    # Save the plot
+    col_results_dir = Path(diff_results_dir) / column
+    col_results_dir.mkdir(parents=True, exist_ok=True)
+    plot_filename = f'plot_{target_id}_avg_control_distance_{distance_metric}_k{k}_imputed.png'
+    plt.savefig(col_results_dir / plot_filename)
+    plt.close()
+
+def plot_y_by_year_for_all(
+    infer_df: pd.DataFrame,
+    imputed_df: pd.DataFrame,
+    columns_to_predict: List[str],
     treatment_ids: List[str],
     k: int,
     distance_metric: str,
     results_dir: str,
-    diff_results_dir: str,
-    imputed_df: pd.DataFrame = None
+    diff_results_dir: str
     ):
     """
-    Plot the values of the columns to predict for the target authority and its neighbors over the years.
-    
-    Parameters:
-    infer_df (pd.DataFrame): The input DataFrame containing data for multiple years.
-    columns_to_predict (List[str]): The columns for which to calculate DiD.
-    treatment_ids (List[str]): The identifiers for the treatment authorities.
-    k (int): number of nearest neighbors
-    distance_metric (str): the distance metric used for matching
-    results_dir (str): The directory to save the results.
-    
-    Returns:
-    Tuple[pd.DataFrame, pd.DataFrame]: Two DataFrames containing the step 1 and step 2 results.
+    Plot the values of the columns to predict for all target authorities and their neighbors over the years.
+
+    Args:
+        infer_df (pd.DataFrame): Original DataFrame with missing values.
+        imputed_df (pd.DataFrame): DataFrame with imputed values.
+        columns_to_predict (List[str]): List of columns to predict and plot.
+        treatment_ids (List[str]): List of target authority IDs.
+        k (int): Number of nearest neighbors.
+        distance_metric (str): Distance metric used for nearest neighbors.
+        results_dir (str): Directory containing the KNN results.
+        diff_results_dir (str): Directory to save the plot results.
     """
-    knn_results_path = results_dir / "knn" / f'knn_results_k={k}_{distance_metric}.csv'
+    knn_results_path = Path(results_dir) / "knn" / f'knn_results_k={k}_{distance_metric}_placebo={placebo}.csv'
     knn_results = pd.read_csv(knn_results_path)
 
     for target_id in tqdm(treatment_ids):
-        control_auth_ids = knn_results[(knn_results['target_id'] == target_id) & (knn_results['is_nn'])]['control_id'].to_list()
+        control_auth_ids = knn_results[
+            (knn_results['target_id'] == target_id) & (knn_results['is_nn'])
+        ]['control_id'].to_list()
         assert len(control_auth_ids) == k
-        plot_y_by_year(infer_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric, imputed_df)
+        plot_y_by_year(
+            infer_df, imputed_df, target_id, control_auth_ids, columns_to_predict, diff_results_dir, k, distance_metric
+        )
 
 def calc_simple_did(
     infer_df: pd.DataFrame, 
@@ -896,25 +1070,28 @@ if __name__ == "__main__":
     placebo = False
     infer_df = get_infer_df(imputed)
     
+    not_imputed_df=get_infer_df(imputed=False)
+    imputed_df=get_infer_df(imputed=True)
+    
     plot_y_by_year_for_all(        
-        infer_df=get_infer_df(imputed=False),
+        infer_df=not_imputed_df,
+        imputed_df=imputed_df,
         columns_to_predict=columns_to_predict, 
         treatment_ids=treatment_ids,
         k=10,
         distance_metric='cosine',
         results_dir=results_dir,
         diff_results_dir=diff_results_dir,
-        imputed_df=get_infer_df(imputed=True)
     )
     
-    run_did_analysis(
-        infer_df,
-        columns_to_predict=columns_to_predict, 
-        treatment_ids=treatment_ids,
-        k=10,
-        distance_metric='cosine',
-        results_dir=results_dir,
-        diff_results_dir=diff_results_dir,
-        imputed=imputed,
-        placebo=placebo
-    )
+    # run_did_analysis(
+    #     infer_df,
+    #     columns_to_predict=columns_to_predict, 
+    #     treatment_ids=treatment_ids,
+    #     k=10,
+    #     distance_metric='cosine',
+    #     results_dir=results_dir,
+    #     diff_results_dir=diff_results_dir,
+    #     imputed=imputed,
+    #     placebo=placebo
+    # )
