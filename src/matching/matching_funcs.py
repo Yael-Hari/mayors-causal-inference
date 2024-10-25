@@ -230,14 +230,14 @@ if __name__ == '__main__':
     
     # test_match_and_plot
     
-    # k = 10
-    # metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
-    # run_matching(k, metric)
+    k = 10
+    metric='cosine' # 'euclidean' or 'cosine' or 'manhattan' or 'minkowski' or 'chebyshev' or 'hamming' or 'jaccard'
+    run_matching(k, metric)
     
     k_for_sampling_placebo = 3
     k = 10
     metric = 'cosine'
-    # placebo_targets = get_placebo_targets(results_dir_knn, treatment_ids, k=k_for_sampling_placebo, metric=metric)
+    placebo_targets = get_placebo_targets(results_dir_knn, treatment_ids, k=k_for_sampling_placebo, metric=metric)
     placebo_df = pd.read_csv(results_dir_knn / 'placebo_targets.csv')
     placebo_targets = placebo_df['placebo_id'].to_list()
     run_matching_placebo(k, metric, placebo_targets)
