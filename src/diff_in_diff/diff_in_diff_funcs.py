@@ -192,9 +192,6 @@ def plot_y_by_year(
         k (int): Number of nearest neighbors.
         distance_metric (str): Distance metric used for nearest neighbors.
     """
-    # Reverse the Hebrew text label for each authority in the dfs
-    infer_df['auth_name'] = infer_df['auth_name'].apply(lambda x: x[::-1])
-    imputed_df['auth_name'] = imputed_df['auth_name'].apply(lambda x: x[::-1])
 
     # Sort by year
     infer_df = infer_df.sort_values(by='year')
@@ -500,6 +497,9 @@ def plot_y_by_year_for_all(
     
     knn_results_path = Path(results_dir) / "knn" / f'knn_results_k={k}_{distance_metric}_placebo={placebo}.csv'
     knn_results = pd.read_csv(knn_results_path)
+    # Reverse the Hebrew text label for each authority in the dfs
+    infer_df['auth_name'] = infer_df['auth_name'].apply(lambda x: x[::-1])
+    imputed_df['auth_name'] = imputed_df['auth_name'].apply(lambda x: x[::-1])
 
     for target_id in tqdm(treatment_ids):
         control_auth_ids = knn_results[
@@ -1107,7 +1107,7 @@ if __name__ == "__main__":
     src_path = Path.cwd() / 'src'
     results_dir = src_path / 'results'
     diff_results_dir = results_dir / 'diff'
-    imputed = True
+    imputed = False
     placebo = True
     infer_df = get_infer_df(imputed)
     
