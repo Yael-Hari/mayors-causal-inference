@@ -10,8 +10,8 @@ We employ a K-Nearest Neighbors (KNN) matching approach combined with Difference
 ## Data Sources
 The primary data sources used in this project are:
 
-Local Authorities Data (1999-2022): Demographic, socioeconomic, infrastructural, and financial data for Israeli local authorities.
-Legal Events Data: Information on arrests, indictments filed, and convictions of mayors or deputy mayors, including the year and type of each event.
+- Local Authorities Data (1999-2022): Demographic, socioeconomic, infrastructural, and financial data for Israeli local authorities.
+- Legal Events Data: Information on arrests, indictments filed, and convictions of mayors or deputy mayors, including the year and type of each event.
 
 ## Quick Start
 
